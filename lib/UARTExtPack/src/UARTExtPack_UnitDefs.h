@@ -1,6 +1,44 @@
+/**
+ * @file UARTExtPack_UnitDefs.h
+ *
+ * @brief Unit definitions for the UART Extension Pack.
+ *
+ * This file defines unit identifiers for the ExtPack system, allowing up to 64
+ * distinct units to be addressed. Each unit is assigned a unique numerical value.
+ *
+ * ## Features:
+ * - Defines unit constants from `unit_U00` to `unit_U63`.
+ * - Provides a standardized way to reference ExtPack units in the code.
+ * - Used in conjunction with the main UART Extension Pack library.
+ *
+ * @author Markus Remy
+ * @date 16.03.2025
+ */
+
 #ifndef LIB_UART_EXTENSION_PACK_FOR_ATMEGA328P_UARTEXTPACK_UNITDEFS_H
 #define LIB_UART_EXTENSION_PACK_FOR_ATMEGA328P_UARTEXTPACK_UNITDEFS_H
 
+/**
+ * @defgroup ExtPack_Units ExtPack Unit Definitions
+ * @brief Defines unique identifiers for ExtPack units.
+ *
+ * Each unit is assigned a unique numerical identifier from 0 to 63.
+ * These constants are used throughout the UART Extension Pack to refer to
+ * specific hardware units.
+ *
+ * Example usage:
+ * @code
+ * unit_t my_unit = unit_U05;
+ * @endcode
+ * @{
+ */
+
+/**
+ * @def unit_UXX
+ * @brief Unique identifier for an ExtPack unit.
+ *
+ * These macros define unit numbers ranging from 0 to 63.
+ */
 #define unit_U00 0
 #define unit_U01 1
 #define unit_U02 2
@@ -65,5 +103,7 @@
 #define unit_U61 61
 #define unit_U62 62
 #define unit_U63 63
+
+/** @} */  // End of ExtPack_Units group
 
 #endif //LIB_UART_EXTENSION_PACK_FOR_ATMEGA328P_UARTEXTPACK_UNITDEFS_H
