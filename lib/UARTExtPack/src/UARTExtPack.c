@@ -110,6 +110,15 @@ void init_ExtPack() {
     UCSR0B |= (1<<RXEN0)|(1<<TXEN0)|(1<<RXCIE0);
     //Set 8-bit data
     UCSR0C |= (1<<UCSZ01)|(1<<UCSZ00);
+    /*
+     * ---------- Init Timer ----------
+     * /8 prescaler, 66 cycles --> 33 UART bits
+     */
+    // Normal mode is default --> No change needed
+    // No compares used --> No change needed
+    // Set prescaler to /8
+    TCCR0B &= ~((1 << CS02) | (1 << CS01) | (1 << CS00));
+    TCCR0B |= ( 1 << CS01);
     // Enable global interrupt
     sei();
 }
@@ -165,7 +174,7 @@ ISR(USART_UDRE_vect) {
 }
 
 // ---------------------------------------- Receiving ----------------------------------------
-// ToDo: Implement and document timer0 for reseting the state machine. (After 33 UART bits+buffer time)
+
 /*
  * Receives data from ExtPack via UART and triggers custom ISRs of Units.
  * Also manages received data for units.
@@ -183,8 +192,13 @@ ISR(USART_RX_vect) {
             // No error
             recv_state = RECV_DATA_NEXT_STATE;
         }
+        // Enables reset state machine timer with 66 clock cycles (at 2 MHz, /8 prescaler)
+        TCNT0 = 190;
+        TIMSK0 |= (1 << TOIE0);
     } else if(recv_state == RECV_DATA_NEXT_STATE) {
         // Received unit data
+        // Disables state machine reset timer
+        TIMSK0 &= ~(1 << TOIE0);
         recv_state = RECV_UNIT_NEXT_STATE;
         if((errors & ((1<<FE0)|(1<<UPE0))) || received_unit >= USED_UNITS){
             // Frame or Parity Error or unit not in range of used units
@@ -208,7 +222,19 @@ ISR(USART_RX_vect) {
     } else if(recv_state == RECV_INVALID_UNIT) {
         // Received unit had an error --> ignore unit data
         recv_state = RECV_UNIT_NEXT_STATE;
+        // Disables state machine reset timer
+        TIMSK0 &= ~(1 << TOIE0);
     }
+}
+
+/*
+ * Resets state machine when timer/counter0 has an overflow
+ */
+ISR(TIMER0_OVF_vect) {
+    //Reset state machine
+    RECV_UNIT_NEXT_STATE;
+    // Disables timer interrupts
+    TIMSK0 &= ~(1 << TOIE0);
 }
 
 // ---------------------------------------- Interface ----------------------------------------

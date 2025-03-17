@@ -16,9 +16,10 @@
  *
  * ## Internal Hardware Components Used:
  * - **USART0** (TX: PD1, RX: PD0)
+ * - **Timer/Counter0**
  *
  * @author Markus Remy
- * @date 16.03.2025
+ * @date 17.03.2025
  */
 
 #ifndef LIB_UART_EXTENSION_PACK_FOR_ATMEGA328P_UARTEXTPACK_H
@@ -97,7 +98,7 @@ typedef uint8_t unit_type_t;
 
 /**
  * Initializes communication with ExtPack over UART.
- * This function enables USART0 and and global interrupts to be able to establish communication.
+ * This function enables USART0, Timer/Counter0 and global interrupts to be able to establish communication.
  */
 void init_ExtPack();
 
