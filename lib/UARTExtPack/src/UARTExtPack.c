@@ -112,7 +112,11 @@ void init_ExtPack() {
     UCSR0C |= (1<<UCSZ01)|(1<<UCSZ00);
     /*
      * ---------- Init Timer ----------
-     * /8 prescaler, 66 cycles --> 33 UART bits
+     * /8 prescaler --> 16 MHz / 8 = 2 MHz
+     * --> Every UART bit is 2 clock cycles
+     *  --> 2 UART messages with 8N1 are 10 bit each --> 20 bits
+     *   --> At least 40 clock cycles
+     * --> start_value = 190 (--> 66 clock cycles (40 + 26 buffer)
      */
     // Normal mode is default --> No change needed
     // No compares used --> No change needed
@@ -134,7 +138,7 @@ void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(un
  * Send the data to ExtPack via UART.
  * Returns 0 if successfully, 1 otherwise.
  */
-uint8_t UART_ExtPack_send(unit_t unit, char data) {
+ext_pack_error_t UART_ExtPack_send(unit_t unit, char data) {
     cli(); // Enter critical zone
     // Send data if:
     // - UART data register is empty
@@ -192,7 +196,8 @@ ISR(USART_RX_vect) {
             // No error
             recv_state = RECV_DATA_NEXT_STATE;
         }
-        // Enables reset state machine timer with 66 clock cycles (at 2 MHz, /8 prescaler)
+        // Enables reset state machine timer
+        TIFR0 |= (1 << TOV0);
         TCNT0 = 190;
         TIMSK0 |= (1 << TOIE0);
     } else if(recv_state == RECV_DATA_NEXT_STATE) {
@@ -232,16 +237,31 @@ ISR(USART_RX_vect) {
  */
 ISR(TIMER0_OVF_vect) {
     //Reset state machine
-    RECV_UNIT_NEXT_STATE;
+    recv_state = RECV_UNIT_NEXT_STATE;
     // Disables timer interrupts
     TIMSK0 &= ~(1 << TOIE0);
 }
 
 // ---------------------------------------- Interface ----------------------------------------
 
+// ------------------ UART_Unit interface ------------------
+
+ext_pack_error_t  send_ExtPack_UART_String(unit_t unit, const char* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
+    int index = 0;
+    ext_pack_error_t error;
+    while (data[index] != '\0') {
+        error = SEND_MAX_ATTEMPTS(send_ExtPack_UART_data(unit, data[index++]), max_attempts, retry_delay_us);
+        if(error == EXT_PACK_FAILURE) {
+            return EXT_PACK_FAILURE;
+        }
+        _delay_us(delay_us);
+    }
+    return EXT_PACK_SUCCESS;
+}
+
 // ------------------ GPIO_Unit interface ------------------
 
-uint8_t refresh_ExtPack_gpio_data(unit_t unit) {
+ext_pack_error_t refresh_ExtPack_gpio_data(unit_t unit) {
     // Set access_mode to "01"
     uint8_t unit_number = (1<<ACC_MODE0) | unit;
     return UART_ExtPack_send(unit_number, 0x00);
@@ -257,26 +277,59 @@ char get_ExtPack_data_gpio_out(unit_t unit) {
 
 // -------------------- Timer interface --------------------
 
-uint8_t set_ExtPack_timer_enable(unit_t unit, uint8_t enable) {
+ext_pack_error_t set_ExtPack_timer_enable(unit_t unit, uint8_t enable) {
     // Set access_mode to "00"
     uint8_t unit_number = ~((1<<ACC_MODE1) | (1<<ACC_MODE0)) & unit;
     return UART_ExtPack_send(unit_number, enable);
 }
 
-uint8_t restart_ExtPack_timer(unit_t unit) {
+ext_pack_error_t restart_ExtPack_timer(unit_t unit) {
     // Set access_mode to "01"
     uint8_t unit_number = ~(1<<ACC_MODE1) & ((1<<ACC_MODE0) | unit);
     return UART_ExtPack_send(unit_number, 0x00);
 }
 
-uint8_t set_ExtPack_timer_prescaler(unit_t unit, uint8_t prescaler_divisor) {
+ext_pack_error_t set_ExtPack_timer_prescaler(unit_t unit, uint8_t prescaler_divisor) {
     // Set access_mode to "10"
     uint8_t unit_number = ~(1<<ACC_MODE0) & ((1<<ACC_MODE1) | unit);
     return UART_ExtPack_send(unit_number, prescaler_divisor);
 }
 
-uint8_t set_ExtPack_timer_start_value(unit_t unit, uint8_t start_value) {
+ext_pack_error_t set_ExtPack_timer_start_value(unit_t unit, uint8_t start_value) {
     // Set access_mode to "11"
     uint8_t unit_number = (1<<ACC_MODE1) | (1<<ACC_MODE0) | unit;
     return UART_ExtPack_send(unit_number, start_value);
+}
+
+ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor, uint8_t start_value, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
+    ext_pack_error_t error =  SEND_MAX_ATTEMPTS(set_ExtPack_timer_enable(unit, 0), max_attempts, retry_delay_us);
+    if(error == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
+    }
+    _delay_us(delay_us);
+    error = SEND_MAX_ATTEMPTS(set_ExtPack_timer_enable(unit, 0), max_attempts, retry_delay_us);
+    if(error == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
+    }
+    _delay_us(delay_us);
+    error = SEND_MAX_ATTEMPTS(set_ExtPack_timer_prescaler(unit, prescaler_divisor), max_attempts, retry_delay_us);
+    if(error == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
+    }
+    _delay_us(delay_us);
+    error = SEND_MAX_ATTEMPTS(set_ExtPack_timer_start_value(unit, start_value), max_attempts, retry_delay_us);
+    if(error == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
+    }
+    _delay_us(delay_us);
+    error = SEND_MAX_ATTEMPTS(restart_ExtPack_timer(unit), max_attempts, retry_delay_us);
+    if(error == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
+    }
+    _delay_us(delay_us);
+    error = SEND_MAX_ATTEMPTS(set_ExtPack_timer_enable(unit, 1), max_attempts, retry_delay_us);
+    if(error == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
+    }
+    return EXT_PACK_SUCCESS;
 }

@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "../lib/UARTExtPack/src/UARTExtPack.h"
 #define F_CPU 16000000UL
 #define USED_UNITS 3
@@ -24,10 +25,7 @@ int main() {
      * ----> pre scaled: 50KHz / 250 = 200 Hz
      * ----> counted: 200KHz / 200 = 1 Hz
      */
-    SEND_BLOCKING(set_ExtPack_timer_start_value(unit_U02_TIME, 56)); // am: 11 (0xC) -- 0x38
-    SEND_BLOCKING(set_ExtPack_timer_prescaler(unit_U02_TIME, 250)); // am: 10 (0x8) -- 0xFA
-    SEND_BLOCKING(restart_ExtPack_timer(unit_U02_TIME)); // am: 01 (0x4) -- 0x00
-    SEND_BLOCKING(set_ExtPack_timer_enable(unit_U02_TIME, 1)); // am: 00 (0x0) -- 0x01
+    configure_ExtPack_timer(unit_U02_TIME, 250, 56, 1000, 10, 1000);
     while(1) {
         ;
     }
@@ -35,15 +33,18 @@ int main() {
 
 void unit_U00_custom_ISR(unit_t unit, char data) {
     // UART Unit data received
-    SEND_BLOCKING(send_ExtPack_UART_data(unit_U00_UART, data));
+    SEND_MAX_ATTEMPTS(send_ExtPack_UART_data(unit_U00_UART, data), 10, 10);
 }
 
 void unit_U01_custom_ISR(unit_t unit, char data) {
     // GPIO interrupt received
-    SEND_BLOCKING(send_ExtPack_UART_data(unit_U00_UART, 'X')); //0x58
+    if(data == 1) {
+        char string[13] = "Hello World!\n";
+        send_ExtPack_UART_String(unit_U00_UART, string, 1000, 10, 1000);
+    }
 }
 
 void unit_U02_custom_ISR(unit_t unit, char data) {
     // Timer interrupt received
-    SEND_BLOCKING(set_ExtPack_gpio_out(unit_U01_GPIO, get_ExtPack_data_gpio_out(unit_U01_GPIO) ^ 0b10));
+    SEND_MAX_ATTEMPTS(set_ExtPack_gpio_out(unit_U01_GPIO, get_ExtPack_data_gpio_out(unit_U01_GPIO) ^ 0b10), 10, 1000);
 }

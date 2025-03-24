@@ -19,7 +19,7 @@
  * - **Timer/Counter0**
  *
  * @author Markus Remy
- * @date 17.03.2025
+ * @date 24.03.2025
  */
 
 #ifndef LIB_UART_EXTENSION_PACK_FOR_ATMEGA328P_UARTEXTPACK_H
@@ -79,6 +79,14 @@ typedef uint8_t unit_type_t;
 #define Timer_Unit 3
 
 /**
+ * @typedef ext_pack_error_t
+ * Type alias for ExtPack errors.
+ *
+ * @details 'ext_pack_error_t' is defined as uint8_t and is used to represent ExtPack errors.
+ */
+typedef uint8_t ext_pack_error_t;
+
+/**
  * @def EXT_PACK_SUCCESS
  * @brief Success value for ExtPack library functions.
  *
@@ -113,33 +121,28 @@ void init_ExtPack();
 void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(unit_t, char));
 
 /**
- * @def SEND_BLOCKING
- * Calls the specified ExtPack send function repeatedly until the data is successfully sent.
- *
- * @param func_call The send function to be called. It should return `EXT_PACK_SUCCESS` or `EXT_PACK_FAILURE`.
- */
-#define SEND_BLOCKING(func_call) \
-    while (func_call == EXT_PACK_FAILURE) {}
-
-/**
  * @def SEND_MAX_ATTEMPTS
  * Calls the specified ExtPack send function repeatedly until the data is successfully sent or the maximum number of attempts is reached.
  *
+ * @note Use max_attempts equal zero for unlimited retries. Please use this only if absolutely necessary.
+ *
+ * @warning Could lead to errors in condition. Call before and save return value in a variable instead.
+ *
  * @param func_call The send function to be called. It should return `EXT_PACK_SUCCESS` or `EXT_PACK_FAILURE`.
- * @param max_attempts The maximum number of attempts to retry the function call.
+ * @param max_attempts The maximum number of attempts to retry the function call. If set to 0 the specified ExtPack send function is called repeatedly until the data is successfully sent.
  * @param delay_us The delay in microseconds applied before each retry.
  */
 #define SEND_MAX_ATTEMPTS(func_call, max_attempts, delay_us) \
     ({ \
         int attempts = 0; \
         int result = EXT_PACK_SUCCESS; \
-        while (func_call == EXT_PACK_FAILURE) { \
+        while ((func_call) == EXT_PACK_FAILURE) { \
             attempts++; \
-            if (attempts >= (max_attempts)) { \
+            if (attempts >= (max_attempts) && (max_attempts) != 0) { \
                 result = EXT_PACK_FAILURE; \
                 break; \
-            }                                      \
-            _delay_us(delay_us);\
+            } \
+            _delay_us(delay_us); \
         } \
         result; \
     })
@@ -151,9 +154,29 @@ void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(un
  *
  * @param unit The ExtPack unit to which the data should be sent.
  * @param data The data to be sent.
- * @return 0 on success, 1 on failure.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
-uint8_t UART_ExtPack_send(unit_t unit, char data);
+ext_pack_error_t UART_ExtPack_send(unit_t unit, char data);
+
+// ------------------ UART_Unit interface ------------------
+
+/**
+ * Sends the given String until '\0' to ExtPack with send chosen mode.
+ * If a send char operation fails the function aborts (can only happen if max_attempts is not set to zero) and returns an error.
+ *
+ * @note max_attempts equal 1 is equivalent to a normal send operation per UART_ExtPack_send.
+ * @note Use max_attempts equal zero for unlimited retries. Please use this only if absolutely necessary.
+ *
+ * @warning Do not use SEND_MAX_ATTEMPTS on this function.
+ *
+ * @param unit The ExtPack unit to which the data should be sent.
+ * @param data The data to be sent as String with terminating '\0'.
+ * @param delay_us The delay waited between two sent chars. (Usually set between 100-1000us)
+ * @param max_attempts The maximum attempts to send a char. 0 for unlimited retries.
+ * @param retry_delay_us The delay between send char attempts. (Usually set between 100-1000us)
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if the function was aborted when sending a char because of an error while sending. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
+ */
+ext_pack_error_t send_ExtPack_UART_String(unit_t unit, const char* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
 
 // ------------------ GPIO_Unit interface ------------------
 
@@ -161,9 +184,9 @@ uint8_t UART_ExtPack_send(unit_t unit, char data);
  * Requests the current input pin states of a GPIO unit.
  *
  * @param unit The target GPIO unit.
- * @return 0 on success, 1 on failure.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
-uint8_t refresh_ExtPack_gpio_data(unit_t unit);
+ext_pack_error_t refresh_ExtPack_gpio_data(unit_t unit);
 
 /**
  * Retrieves the last received values of the given ExtPack GPIO unit's input pins.
@@ -188,35 +211,53 @@ char get_ExtPack_data_gpio_out(unit_t unit);
  *
  * @param unit The Timer unit of ExtPack whose enable state should be set.
  * @param enable Set to 0 to disable, any nonzero value to enable.
- * @return 0 on success, 1 on failure.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
-uint8_t set_ExtPack_timer_enable(unit_t unit, uint8_t enable);
+ext_pack_error_t set_ExtPack_timer_enable(unit_t unit, uint8_t enable);
 
 /**
  * Sends a command to restart the specified Timer unit of ExtPack.
  *
  * @param unit The Timer unit of ExtPack to be restarted.
- * @return 0 on success, 1 on failure.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
-uint8_t restart_ExtPack_timer(unit_t unit);
+ext_pack_error_t restart_ExtPack_timer(unit_t unit);
 
 /**
  * Sends the timer prescaler divisor to ExtPack for the specified Timer unit.
  *
  * @param unit The Timer unit of ExtPack for which the prescaler divisor is set.
  * @param prescaler_divisor The prescaler divisor value to be applied.
- * @return 0 on success, 1 on failure.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
-uint8_t set_ExtPack_timer_prescaler(unit_t unit, uint8_t prescaler_divisor);
+ext_pack_error_t set_ExtPack_timer_prescaler(unit_t unit, uint8_t prescaler_divisor);
 
 /**
  * Sends the new start value to ExtPack for the specified Timer unit.
  *
  * @param unit The Timer unit of ExtPack for which the start value is set.
  * @param start_value The start value to be applied.
- * @return 0 on success, 1 on failure.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
-uint8_t set_ExtPack_timer_start_value(unit_t unit, uint8_t start_value);
+ext_pack_error_t set_ExtPack_timer_start_value(unit_t unit, uint8_t start_value);
+
+/**
+ * Configures the timer with prescaler divisor and start value.
+ * Additionally, the timer is restarted and enabled.
+ *
+ * @note Use max_attempts equal zero for unlimited retries. Please use this only if absolutely necessary.
+ *
+ * @warning Do not use SEND_MAX_ATTEMPTS on this function.
+ *
+ * @param unit The Timer unit of ExtPack which to configure.
+ * @param prescaler_divisor The prescaler divisor value to be applied.
+ * @param start_value The start value to be applied.
+ * @param delay_us The delay waited between two sent commands. (Usually set between 100-1000us)
+ * @param max_attempts The maximum attempts to send a command. 0 for unlimited retries.
+ * @param retry_delay_us The delay between two send command attempts. (Usually set between 100-1000us)
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
+ */
+ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor, uint8_t start_value, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
 
 // -------------------------------------- Aliases for Interfaces --------------------------------------
 
