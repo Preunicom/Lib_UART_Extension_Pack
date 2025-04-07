@@ -61,22 +61,34 @@ typedef uint8_t unit_type_t;
 #define UNDEFINED 0
 
 /**
- * @def GPIO_Unit
- * Constant value representing the GPIO (General Purpose Input/Output) unit type.
+ * @def Timer_Unit
+ * Constant value representing the Timer unit type.
  */
-#define GPIO_Unit 1
-
-/**
- * @def UART_Unit
- * Constant value representing the UART (Universal Asynchronous Receiver/Transmitter) unit type.
- */
-#define UART_Unit 2
+#define Reset_Unit 1
 
 /**
  * @def Timer_Unit
  * Constant value representing the Timer unit type.
  */
-#define Timer_Unit 3
+#define Error_Unit 2
+
+/**
+ * @def GPIO_Unit
+ * Constant value representing the GPIO (General Purpose Input/Output) unit type.
+ */
+#define GPIO_Unit 3
+
+/**
+ * @def UART_Unit
+ * Constant value representing the UART (Universal Asynchronous Receiver/Transmitter) unit type.
+ */
+#define UART_Unit 4
+
+/**
+ * @def Timer_Unit
+ * Constant value representing the Timer unit type.
+ */
+#define Timer_Unit 5
 
 /**
  * @typedef ext_pack_error_t
@@ -107,8 +119,14 @@ typedef uint8_t ext_pack_error_t;
 /**
  * Initializes communication with ExtPack over UART.
  * This function enables USART0, Timer/Counter0 and global interrupts to be able to establish communication.
+ * It also initializes unit_U00 as reset unit and unit_U01 as error unit with given ISRs.
+ *
+* @param reset_ISR A pointer to the interrupt service routine (ISR) function
+ *                   to be called when the ExtPack got reset.
+* @param error_ISR A pointer to the interrupt service routine (ISR) function
+ *                   to be called when the error unit of the ExtPack sends an error.
  */
-void init_ExtPack();
+void init_ExtPack(void (*reset_ISR)(unit_t, char), void (*error_ISR)(unit_t, char));
 
 /**
  * Initializes the specified ExtPack unit with the given parameters.
@@ -157,6 +175,15 @@ void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(un
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
 ext_pack_error_t UART_ExtPack_send(unit_t unit, char data);
+
+// ------------------- RST_Unit interface ------------------
+
+/**
+ * Send a reset command to unit zero of ExtPack via UART.
+ *
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
+ */
+ext_pack_error_t reset_ExtPack();
 
 // ------------------ UART_Unit interface ------------------
 

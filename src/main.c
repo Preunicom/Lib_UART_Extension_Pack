@@ -1,22 +1,31 @@
 #include <stdlib.h>
+#include <avr/interrupt.h>
+
 #include "../lib/UARTExtPack/src/UARTExtPack.h"
+#include <avr/wdt.h>
+
+
 #define F_CPU 16000000UL
 #define USED_UNITS 3
 
-#define unit_U00_UART unit_U00
-#define unit_U01_GPIO unit_U01
-#define unit_U02_TIME unit_U02
+#define unit_U00_RST unit_U00
+#define unit_U01_ERR unit_U01
+#define unit_U02_UART unit_U02
+#define unit_U03_GPIO unit_U03
+#define unit_U04_TIME unit_U04
 
 void unit_U00_custom_ISR(unit_t, char);
 void unit_U01_custom_ISR(unit_t, char);
 void unit_U02_custom_ISR(unit_t, char);
+void unit_U03_custom_ISR(unit_t, char);
+void unit_U04_custom_ISR(unit_t, char);
 
 int main() {
     // Initialize the UART Extension Pack
-    init_ExtPack();
-    init_ExtPack_Unit(unit_U00_UART, UART_Unit, unit_U00_custom_ISR);
-    init_ExtPack_Unit(unit_U01_GPIO, GPIO_Unit, unit_U01_custom_ISR);
-    init_ExtPack_Unit(unit_U02_TIME, Timer_Unit, unit_U02_custom_ISR);
+    init_ExtPack(unit_U00_custom_ISR, unit_U01_custom_ISR);
+    init_ExtPack_Unit(unit_U02_UART, UART_Unit, unit_U02_custom_ISR);
+    init_ExtPack_Unit(unit_U03_GPIO, GPIO_Unit, unit_U03_custom_ISR);
+    init_ExtPack_Unit(unit_U04_TIME, Timer_Unit, unit_U04_custom_ISR);
     /*
      * 50 KHz
      * 250 values are a good divider.
@@ -25,26 +34,39 @@ int main() {
      * ----> pre scaled: 50KHz / 250 = 200 Hz
      * ----> counted: 200KHz / 200 = 1 Hz
      */
-    configure_ExtPack_timer(unit_U02_TIME, 250, 56, 1000, 10, 1000);
+    configure_ExtPack_timer(unit_U04_TIME, 250, 56, 1000, 10, 1000);
     while(1) {
         ;
     }
 }
 
 void unit_U00_custom_ISR(unit_t unit, char data) {
-    // UART Unit data received
-    SEND_MAX_ATTEMPTS(send_ExtPack_UART_data(unit_U00_UART, data), 10, 10);
-}
-
-void unit_U01_custom_ISR(unit_t unit, char data) {
-    // GPIO interrupt received
-    if(data == 1) {
-        char string[13] = "Hello World!\n";
-        send_ExtPack_UART_String(unit_U00_UART, string, 1000, 10, 1000);
+    // ExtPack was reset
+    if ((uint8_t)data == 0xFF) {
+        // Reset controller
+        __asm__ __volatile__("jmp 0x0000");
     }
 }
 
+void unit_U01_custom_ISR(unit_t unit, char data) {
+    // An error occurred
+    SEND_MAX_ATTEMPTS(set_ExtPack_gpio_out(unit_U03_GPIO, get_ExtPack_data_gpio_out(unit_U03_GPIO) ^ 0b01), 10, 1000);
+}
+
 void unit_U02_custom_ISR(unit_t unit, char data) {
+    // UART Unit data received
+    SEND_MAX_ATTEMPTS(send_ExtPack_UART_data(unit_U02_UART, data), 10, 10);
+}
+
+void unit_U03_custom_ISR(unit_t unit, char data) {
+    // GPIO interrupt received
+    if(data == 1) {
+        char string[13] = "Hello World!\n";
+        send_ExtPack_UART_String(unit_U02_UART, string, 1000, 10, 1000);
+    }
+}
+
+void unit_U04_custom_ISR(unit_t unit, char data) {
     // Timer interrupt received
-    SEND_MAX_ATTEMPTS(set_ExtPack_gpio_out(unit_U01_GPIO, get_ExtPack_data_gpio_out(unit_U01_GPIO) ^ 0b10), 10, 1000);
+    SEND_MAX_ATTEMPTS(set_ExtPack_gpio_out(unit_U03_GPIO, get_ExtPack_data_gpio_out(unit_U03_GPIO) ^ 0b10), 10, 1000);
 }

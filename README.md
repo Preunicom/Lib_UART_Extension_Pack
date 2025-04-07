@@ -7,12 +7,13 @@ ATMega328P communicates with the UART_Extension_Pack with 8N1 and 1 MBaud.
 ## Functionality
 ### Units
 
-This library supports UART_Unit, GPIO_Uni and Timer_Unit on the ExtPack.  
+This library supports Reset_Unit, Error_Unit, UART_Unit, GPIO_Uni and Timer_Unit on the ExtPack.  
 
 ### Functions
 
 #### Transmitting
 
+- Reset ExtPack
 - Sending UART data
 - Setting GPIO output values
 - Configure timer
@@ -26,8 +27,8 @@ This library supports UART_Unit, GPIO_Uni and Timer_Unit on the ExtPack.
 
 ### Initialisation
 
-1) Initialize ExtPack with __init_ExtPack()__
-2) Initialize all used units with 
+1) Initialize ExtPack with __init_ExtPack(reset_ISR, error_ISR)__
+2) Initialize all used units except reset and error units they are already initialized in __init_ExtPack__() with 
    - unit number (__unit_UXX__)
    - unit type (__UART_Unit__, __GPIO_Unit__ or __Timer_Unit__) and
    - your custom ISR (of type __void (*func)(unit_t, char)__)
@@ -64,9 +65,10 @@ To refresh this data use __refresh_ExtPack_gpio_data__.
 
 ## Available functions
 
-- void __init_ExtPack__()
+- void __init_ExtPack__(void (*reset_ISR)(unit_t, char), void (*error_ISR)(unit_t, char))
 - void __init_ExtPack_Unit__(unit_t, unit_type, void (*custom_ISR)(unit_t, char))
 - ext_pack_error_t __UART_ExtPack_send__(unit_t, char)
+- ext_pack_error_t __reset_ExtPack__()
 - ext_pack_error_t __send_ExtPack_UART_String__(unit_t, const char*, uint16_t, uint8_t, uint16_t)
 - ext_pack_error_t __refresh_ExtPack_gpio_data__(unit_t)
 - char __get_ExtPack_data_gpio_in__(unit_t)
@@ -93,14 +95,16 @@ To refresh this data use __refresh_ExtPack_gpio_data__.
 
 ### unit_t
 
-- unit_U00
-- unit_U01
+- unit_U00 (reset unit)
+- unit_U01 (error unit)
 - ...
 - unit_U62
 - unit_U63
 
 ### unit_type_t
 
+- Reset_Unit
+- Error_Unit
 - GPIO_Unit
 - UART_Unit
 - Timer_Unit
