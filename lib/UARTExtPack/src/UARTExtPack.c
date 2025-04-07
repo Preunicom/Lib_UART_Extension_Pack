@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <avr/io.h>
 #include "avr/interrupt.h"
+
 // -------------------------- Unit data - definition & declaration --------------------------
 
 /**
@@ -98,7 +99,7 @@ unit_t received_unit;
 
 // ---------------------------------------- Initialisation ----------------------------------------
 
-void init_ExtPack() {
+void init_ExtPack(void (*reset_ISR)(unit_t, char), void (*error_ISR)(unit_t, char)) {
     /*
      * ---------- Init UART ----------
      * UART packages: 8N1 with 1 MBAUD
@@ -125,6 +126,8 @@ void init_ExtPack() {
     TCCR0B |= ( 1 << CS01);
     // Enable global interrupt
     sei();
+    init_ExtPack_Unit(unit_U00, Reset_Unit, reset_ISR);
+    init_ExtPack_Unit(unit_U01, Error_Unit, error_ISR);
 }
 
 void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(unit_t, char)) {
@@ -243,6 +246,12 @@ ISR(TIMER0_OVF_vect) {
 }
 
 // ---------------------------------------- Interface ----------------------------------------
+
+// ------------------ RST_Unit interface -------------------
+
+ext_pack_error_t reset_ExtPack() {
+    return UART_ExtPack_send(unit_U00, 0xFF);
+}
 
 // ------------------ UART_Unit interface ------------------
 
