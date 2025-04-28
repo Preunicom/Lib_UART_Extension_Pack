@@ -52,33 +52,33 @@ struct unit {
 struct unit units[USED_UNITS] = {0};
 
 /**
- * @struct gpio_data
- * Structure representing the GPIO input and output values.
+ * @struct unit_data_storage
+ * Structure representing input and output values of a units.
  *
- * @brief This structure holds the input and output pin values for a GPIO unit. It is used to
- *        store the current states of the GPIO unit's pins.
+ * @brief This structure holds the input and output values for a unit. It is used to
+ *        store the current states of the unit.
  *
  * @note The structure contains two fields:
- *       - `input_values`: Stores the input pin values of the GPIO unit.
- *       - `output_values`: Stores the output pin values of the GPIO unit.
+ *       - `input_values`: Stores the incoming values of the unit.
+ *       - `output_values`: Stores the outgoing values of the unit.
  */
-struct gpio_data {
-    char input_values;   /**< Input pin values of the GPIO unit */
-    char output_values;  /**< Output pin values of the GPIO unit */
+struct unit_data_storage {
+    char input_values;   /**< Incoming values of the unit */
+    char output_values;  /**< Outgoing values of the unit */
 };
 
 /**
  * @var unit_data
- * Array of GPIO data structures for multiple units.
+ * Array of unit data structures for multiple units.
  *
- * @brief This array stores the GPIO input and output data for each unit. Each element in the array
- *        corresponds to a specific unit and stores its input and output pin states, provided that
- *        the unit is a GPIO unit.
+ * @brief This array stores the incoming and outgoing data for each unit. Each element in the array
+ *        corresponds to a specific unit and stores its incoming and outgoing states, provided that
+ *        the unit uses the storage.
  *
  * @note The array is initialized with zeros, and its size is determined by the `USED_UNITS` constant.
- *       It is used to manage and store the GPIO data for all active GPIO units within the system.
+ *       It is used to manage and store the data for all active units which needs it within the system.
  */
-struct gpio_data unit_data[USED_UNITS] = {0};
+struct unit_data_storage unit_data[USED_UNITS] = {0};
 
 // ------------------- UART communication - data definition & declaration -------------------
 
@@ -133,6 +133,10 @@ void init_ExtPack(void (*reset_ISR)(unit_t, char), void (*error_ISR)(unit_t, cha
 void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(unit_t, char)) {
     units[unit].unit_type = unit_type;
     units[unit].custom_ISR = custom_ISR;
+    if (unit_type == SPI_Unit) {
+        // Set initial slave id to 0
+        unit_data[unit].output_values = 0;
+    }
 }
 
 // ---------------------------------------- Sending ----------------------------------------
@@ -157,6 +161,9 @@ ext_pack_error_t UART_ExtPack_send(unit_t unit, char data) {
         next_data_to_send = data;
         if(units[unit].unit_type == GPIO_Unit && !(unit & (1<<ACC_MODE0))) {
             // Save sent GPIO Outputs
+            unit_data[unit].output_values = data;
+        } else if (units[unit].unit_type == SPI_Unit && (unit & (1<<ACC_MODE0))) {
+            // Save sent SPI slave id
             unit_data[unit].output_values = data;
         }
         // Activate data register empty interrupt
@@ -255,7 +262,7 @@ ext_pack_error_t reset_ExtPack() {
 
 // ------------------ UART_Unit interface ------------------
 
-ext_pack_error_t  send_ExtPack_UART_String(unit_t unit, const char* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
+ext_pack_error_t send_ExtPack_UART_String(unit_t unit, const char* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
     int index = 0;
     ext_pack_error_t error;
     while (data[index] != '\0') {
@@ -266,6 +273,40 @@ ext_pack_error_t  send_ExtPack_UART_String(unit_t unit, const char* data, uint16
         _delay_us(delay_us);
     }
     return EXT_PACK_SUCCESS;
+}
+
+// ------------------ SPI_Unit interface -------------------
+
+ext_pack_error_t set_ExtPack_SPI_slave(unit_t unit, uint8_t slave_id) {
+    return send_ExtPack_SPI_data(unit, (char)slave_id);
+}
+
+ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, char data) {
+    if(set_ExtPack_SPI_slave(unit, slave_id) == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
+    }
+    return send_ExtPack_SPI_data(unit, data);
+}
+
+ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id, const char* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
+    int index = 0;
+    ext_pack_error_t error;
+    error = SEND_MAX_ATTEMPTS(set_ExtPack_SPI_slave(unit, slave_id), max_attempts, retry_delay_us);
+    if(error == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
+    }
+    while (data[index] != '\0') {
+        error = SEND_MAX_ATTEMPTS(send_ExtPack_SPI_data(unit, data[index++]), max_attempts, retry_delay_us);
+        if(error == EXT_PACK_FAILURE) {
+            return EXT_PACK_FAILURE;
+        }
+        _delay_us(delay_us);
+    }
+    return EXT_PACK_SUCCESS;
+}
+
+char get_ExtPack_data_SPI_current_slave(unit_t unit) {
+    return unit_data[unit].output_values;
 }
 
 // ------------------ GPIO_Unit interface ------------------
