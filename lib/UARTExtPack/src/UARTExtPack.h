@@ -257,7 +257,7 @@ ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id,
  * @param unit The SPI unit of ExtPack to which the slave if was sent.
  * @return The last sent SPI slave id.
  */
-char get_ExtPack_data_SPI_current_slave(unit_t unit);
+uint8_t get_ExtPack_data_SPI_current_slave(unit_t unit);
 
 // ------------------ GPIO_Unit interface ------------------
 

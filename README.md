@@ -7,7 +7,7 @@ ATMega328P communicates with the UART_Extension_Pack with 8N1 and 1 MBaud.
 ## Functionality
 ### Units
 
-This library supports Reset_Unit, Error_Unit, UART_Unit, GPIO_Uni and Timer_Unit on the ExtPack.  
+This library supports Reset_Unit, Error_Unit, UART_Unit, GPIO_Uni, Timer_Unit and SPI_Unit on the ExtPack.  
 
 ### Functions
 
@@ -17,11 +17,13 @@ This library supports Reset_Unit, Error_Unit, UART_Unit, GPIO_Uni and Timer_Unit
 - Sending UART data
 - Setting GPIO output values
 - Configure timer
+- Sending SPI data
 
 #### Receiving
 
 - custom ISRs for all units can be implemented (act like interrupted from the unit itself)
 - GPIO has an extra feature with saving the last in- and output values to have current values accessible
+- SPI also stores the last set slave id to be able to minimize control message overhead
 
 ## Usage
 
@@ -52,9 +54,9 @@ When __max_attempts__ is equal to zero there is no effect of __retry_delay_us__.
 
 Some functions like __send_ExtPack_UART_String()__ use SEND_MAX_ATTEMPTS and take these parameters in their own signature.
 
-### send_ExtPack_UART_String()
+### send_ExtPack_UART_String() & send_ExtPack_SPI_String_to_slave
 
-Sends the String to a UART unit of ExtPack without the trailing '\0'.  
+Sends the String to a UART/SPI unit of ExtPack without the trailing '\0'.  
 Make sure the string ends with a '\0'!
 
 ### set_ExtPack_data_gpio_out() / get_ExtPack_data_gpio_out()
@@ -62,6 +64,13 @@ Make sure the string ends with a '\0'!
 These functions do not communicate with the ExtPack.  
 They take the last received/sent data.  
 To refresh this data use __refresh_ExtPack_gpio_data__.
+
+### get_ExtPack_data_SPI_current_slave()
+
+This function does not communicate with the ExtPack.
+They take the last sent slave id as the SPI Unit stores it for further messages.
+**WARNING:** If there is an error while sending the slave id (for example it does not reach the ExtPack or is invalid)
+it will be stored either. The slave id has to be set again.
 
 ## Available functions
 
@@ -78,12 +87,18 @@ To refresh this data use __refresh_ExtPack_gpio_data__.
 - ext_pack_error_t __set_ExtPack_timer_prescaler__(unit_t, uint8_t);
 - ext_pack_error_t __set_ExtPack_timer_start_value__(unit_t, uint8_t);
 - ext_pack_error_t __configure_ExtPack_timer__(unit_t, uint8_t, uint8_t, uint16_t, uint8_t, uint16_t)
+- ext_pack_error_t __set_ExtPack_SPI_slave__(unit_t, uint8_t)
+- ext_pack_error_t __send_ExtPack_SPI_data_to_slave__(unit_t, uint8_t, char)
+- ext_pack_error_t __send_ExtPack_SPI_String_to_slave__(unit_t, uint8_t, const char*, uint16_t, uint8_t, uint16_t)
+- uint8_t __get_ExtPack_data_SPI_current_slave__(unit_t)
 
 ## Available macros
 
 - __SEND_MAX_ATTEMPTS__(func_call, max_attempts, delay_us)
 - __set_ExtPack_gpio_out__(unit_t, char)
 - __send_ExtPack_UART_data__(unit_t, char)
+- __send_ExtPack_SPI_data__(unit_t, char)
+- __send_ExtPack_SPI_String__(unit_t, const char*, uint16_t, uint8_t, uint16_t)
 
 ## Available types
 
@@ -108,6 +123,7 @@ To refresh this data use __refresh_ExtPack_gpio_data__.
 - GPIO_Unit
 - UART_Unit
 - Timer_Unit
+- SPI_Unit
 
 ### ext_pack_error_t
 

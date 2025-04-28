@@ -133,10 +133,6 @@ void init_ExtPack(void (*reset_ISR)(unit_t, char), void (*error_ISR)(unit_t, cha
 void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(unit_t, char)) {
     units[unit].unit_type = unit_type;
     units[unit].custom_ISR = custom_ISR;
-    if (unit_type == SPI_Unit) {
-        // Set initial slave id to 0
-        unit_data[unit].output_values = 0;
-    }
 }
 
 // ---------------------------------------- Sending ----------------------------------------
@@ -305,8 +301,8 @@ ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id,
     return EXT_PACK_SUCCESS;
 }
 
-char get_ExtPack_data_SPI_current_slave(unit_t unit) {
-    return unit_data[unit].output_values;
+uint8_t get_ExtPack_data_SPI_current_slave(unit_t unit) {
+    return (uint8_t)unit_data[unit].output_values;
 }
 
 // ------------------ GPIO_Unit interface ------------------
