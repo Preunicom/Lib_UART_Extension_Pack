@@ -97,6 +97,20 @@ uint8_t next_data_to_send;
 
 unit_t received_unit;
 
+// -------------------------------------  Auxiliary functions -------------------------------------
+
+void delay_us(unsigned int __us) {
+    for (unsigned int i = 0; i < __us; i++) {
+        _delay_us(1);
+    }
+}
+
+void delay_ms(unsigned int __ms) {
+    for (unsigned int i = 0; i < __ms; i++) {
+        _delay_ms(1);
+    }
+}
+
 // ---------------------------------------- Initialisation ----------------------------------------
 
 void init_ExtPack(void (*reset_ISR)(unit_t, uint8_t), void (*error_ISR)(unit_t, uint8_t)) {
@@ -255,7 +269,7 @@ ext_pack_error_t reset_ExtPack() {
 
 // ------------------ UART_Unit interface ------------------
 
-ext_pack_error_t  send_ExtPack_UART_String(unit_t unit, const uint8_t* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
+ext_pack_error_t  send_ExtPack_UART_String(unit_t unit, const uint8_t* data, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
     int index = 0;
     ext_pack_error_t error;
     while (data[index] != '\0') {
@@ -263,7 +277,7 @@ ext_pack_error_t  send_ExtPack_UART_String(unit_t unit, const uint8_t* data, uin
         if(error == EXT_PACK_FAILURE) {
             return EXT_PACK_FAILURE;
         }
-        _delay_us(delay_us);
+        delay_us(send_delay_us);
     }
     return EXT_PACK_SUCCESS;
 }
@@ -310,32 +324,32 @@ ext_pack_error_t set_ExtPack_timer_start_value(unit_t unit, uint8_t start_value)
     return UART_ExtPack_send(unit_number, start_value);
 }
 
-ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor, uint8_t start_value, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
+ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor, uint8_t start_value, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
     ext_pack_error_t error =  SEND_MAX_ATTEMPTS(set_ExtPack_timer_enable(unit, 0), max_attempts, retry_delay_us);
     if(error == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;
     }
-    _delay_us(delay_us);
+    delay_us(send_delay_us);
     error = SEND_MAX_ATTEMPTS(set_ExtPack_timer_enable(unit, 0), max_attempts, retry_delay_us);
     if(error == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;
     }
-    _delay_us(delay_us);
+    delay_us(send_delay_us);
     error = SEND_MAX_ATTEMPTS(set_ExtPack_timer_prescaler(unit, prescaler_divisor), max_attempts, retry_delay_us);
     if(error == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;
     }
-    _delay_us(delay_us);
+    delay_us(send_delay_us);
     error = SEND_MAX_ATTEMPTS(set_ExtPack_timer_start_value(unit, start_value), max_attempts, retry_delay_us);
     if(error == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;
     }
-    _delay_us(delay_us);
+    delay_us(send_delay_us);
     error = SEND_MAX_ATTEMPTS(restart_ExtPack_timer(unit), max_attempts, retry_delay_us);
     if(error == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;
     }
-    _delay_us(delay_us);
+    delay_us(send_delay_us);
     error = SEND_MAX_ATTEMPTS(set_ExtPack_timer_enable(unit, 1), max_attempts, retry_delay_us);
     if(error == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;

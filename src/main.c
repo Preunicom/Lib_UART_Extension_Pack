@@ -2,10 +2,7 @@
 #include <avr/interrupt.h>
 
 #include "../lib/UARTExtPack/src/UARTExtPack.h"
-#include <avr/wdt.h>
 
-
-#define F_CPU 16000000UL
 #define USED_UNITS 3
 
 #define unit_U00_RST unit_U00
