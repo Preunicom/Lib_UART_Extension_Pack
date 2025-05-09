@@ -35,7 +35,7 @@
  */
 struct unit {
     unit_type_t unit_type;
-    void (*custom_ISR)(unit_t, char);
+    void (*custom_ISR)(unit_t, uint8_t);
 };
 
 /**
@@ -63,8 +63,8 @@ struct unit units[USED_UNITS] = {0};
  *       - `output_values`: Stores the output pin values of the GPIO unit.
  */
 struct gpio_data {
-    char input_values;   /**< Input pin values of the GPIO unit */
-    char output_values;  /**< Output pin values of the GPIO unit */
+    uint8_t input_values;   /**< Input pin values of the GPIO unit */
+    uint8_t output_values;  /**< Output pin values of the GPIO unit */
 };
 
 /**
@@ -93,13 +93,13 @@ struct gpio_data unit_data[USED_UNITS] = {0};
 
 state_type recv_state = RECV_UNIT_NEXT_STATE;
 
-char next_data_to_send;
+uint8_t next_data_to_send;
 
 unit_t received_unit;
 
 // ---------------------------------------- Initialisation ----------------------------------------
 
-void init_ExtPack(void (*reset_ISR)(unit_t, char), void (*error_ISR)(unit_t, char)) {
+void init_ExtPack(void (*reset_ISR)(unit_t, uint8_t), void (*error_ISR)(unit_t, uint8_t)) {
     /*
      * ---------- Init UART ----------
      * UART packages: 8N1 with 1 MBAUD
@@ -130,7 +130,7 @@ void init_ExtPack(void (*reset_ISR)(unit_t, char), void (*error_ISR)(unit_t, cha
     init_ExtPack_Unit(unit_U01, Error_Unit, error_ISR);
 }
 
-void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(unit_t, char)) {
+void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(unit_t, uint8_t)) {
     units[unit].unit_type = unit_type;
     units[unit].custom_ISR = custom_ISR;
 }
@@ -141,7 +141,7 @@ void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(un
  * Send the data to ExtPack via UART.
  * Returns 0 if successfully, 1 otherwise.
  */
-ext_pack_error_t UART_ExtPack_send(unit_t unit, char data) {
+ext_pack_error_t UART_ExtPack_send(unit_t unit, uint8_t data) {
     cli(); // Enter critical zone
     // Send data if:
     // - UART data register is empty
@@ -213,7 +213,7 @@ ISR(USART_RX_vect) {
             ;
         } else {
             // No error
-            void (*custom_ISR)(unit_t, char) = units[received_unit].custom_ISR;
+            void (*custom_ISR)(unit_t, uint8_t) = units[received_unit].custom_ISR;
             switch (units[received_unit].unit_type) {
                 case UNDEFINED:
                     return; // Ends receive because no unit type is chosen
@@ -255,7 +255,7 @@ ext_pack_error_t reset_ExtPack() {
 
 // ------------------ UART_Unit interface ------------------
 
-ext_pack_error_t  send_ExtPack_UART_String(unit_t unit, const char* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
+ext_pack_error_t  send_ExtPack_UART_String(unit_t unit, const uint8_t* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
     int index = 0;
     ext_pack_error_t error;
     while (data[index] != '\0') {
@@ -276,11 +276,11 @@ ext_pack_error_t refresh_ExtPack_gpio_data(unit_t unit) {
     return UART_ExtPack_send(unit_number, 0x00);
 }
 
-char get_ExtPack_data_gpio_in(unit_t unit) {
+uint8_t get_ExtPack_data_gpio_in(unit_t unit) {
     return unit_data[unit].input_values;
 }
 
-char get_ExtPack_data_gpio_out(unit_t unit) {
+uint8_t get_ExtPack_data_gpio_out(unit_t unit) {
     return unit_data[unit].output_values;
 }
 
