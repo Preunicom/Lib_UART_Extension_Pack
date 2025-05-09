@@ -120,6 +120,24 @@ typedef uint8_t ext_pack_error_t;
  */
 #define EXT_PACK_FAILURE 1
 
+// --------------------------------  Definition of auxiliary functions -------------------------------
+
+/**
+ * Delays for approximately the given time through busy waiting.
+ * Calls _delay_us(1) for delay_us times to bypass the problem to have compile-time constant vales for _delay_us.
+ *
+ * @param delay_us Delay time in us.
+ */
+void delay_us(unsigned int delay_us);
+
+/**
+*  Delays for approximately the given time through busy waiting.
+ * Calls _delay_ms(1) for delay_ms times to bypass the problem to have compile-time constant vales for _delay_ms.
+ *
+ * @param delay_ms Delay time in ms.
+ */
+void delay_ms(unsigned int delay_ms);
+
 // -------------------------------------  Definition of Interface -------------------------------------
 
 /**
@@ -132,7 +150,7 @@ typedef uint8_t ext_pack_error_t;
 * @param error_ISR A pointer to the interrupt service routine (ISR) function
  *                   to be called when the error unit of the ExtPack sends an error.
  */
-void init_ExtPack(void (*reset_ISR)(unit_t, char), void (*error_ISR)(unit_t, char));
+void init_ExtPack(void (*reset_ISR)(unit_t, uint8_t), void (*error_ISR)(unit_t, uint8_t));
 
 /**
  * Initializes the specified ExtPack unit with the given parameters.
@@ -142,7 +160,7 @@ void init_ExtPack(void (*reset_ISR)(unit_t, char), void (*error_ISR)(unit_t, cha
  * @param custom_ISR A pointer to the interrupt service routine (ISR) function
  *                   to be called when an interrupt occurs for this unit.
  */
-void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(unit_t, char));
+void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(unit_t, uint8_t));
 
 /**
  * @def SEND_MAX_ATTEMPTS
@@ -156,7 +174,7 @@ void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(un
  * @param max_attempts The maximum number of attempts to retry the function call. If set to 0 the specified ExtPack send function is called repeatedly until the data is successfully sent.
  * @param delay_us The delay in microseconds applied before each retry.
  */
-#define SEND_MAX_ATTEMPTS(func_call, max_attempts, delay_us) \
+#define SEND_MAX_ATTEMPTS(func_call, max_attempts, retry_delay_us) \
     ({ \
         int attempts = 0; \
         int result = EXT_PACK_SUCCESS; \
@@ -166,7 +184,7 @@ void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(un
                 result = EXT_PACK_FAILURE; \
                 break; \
             } \
-            _delay_us(delay_us); \
+            delay_us(retry_delay_us); \
         } \
         result; \
     })
@@ -180,7 +198,7 @@ void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(un
  * @param data The data to be sent.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
-ext_pack_error_t UART_ExtPack_send(unit_t unit, char data);
+ext_pack_error_t UART_ExtPack_send(unit_t unit, uint8_t data);
 
 // ------------------- RST_Unit interface ------------------
 
@@ -207,9 +225,9 @@ ext_pack_error_t reset_ExtPack();
  * @param delay_us The delay waited between two sent chars. (Usually set between 100-1000us)
  * @param max_attempts The maximum attempts to send a char. 0 for unlimited retries.
  * @param retry_delay_us The delay between send char attempts. (Usually set between 100-1000us)
- * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if the function was aborted when sending a char because of an error while sending. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if the function was aborted when sending a uint8_t because of an error while sending. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
  */
-ext_pack_error_t send_ExtPack_UART_String(unit_t unit, const char* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
+ext_pack_error_t send_ExtPack_UART_String(unit_t unit, const uint8_t* data, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
 
 // ------------------ SPI_Unit interface -------------------
 
@@ -230,7 +248,7 @@ ext_pack_error_t set_ExtPack_SPI_slave(unit_t unit, uint8_t slave_id);
  * @param data The data to be sent.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
-ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, char data);
+ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, uint8_t data);
 
 /**
  * Sends a set_ExtPack_SPI_slave control message followed by the given String until '\0' to ExtPack with send chosen mode.
@@ -249,7 +267,7 @@ ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, c
  * @param retry_delay_us The delay between send message attempts. (Usually set between 100-1000us)
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if the function was aborted when sending a char because of an error while sending. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
  */
-ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id, const char* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
+ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id, const uint8_t* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
 
 /**
  * Retrieves the last set SPI slave id of the given ExtPack SPI unit'.
@@ -275,7 +293,7 @@ ext_pack_error_t refresh_ExtPack_gpio_data(unit_t unit);
  * @param unit The GPIO unit of ExtPack from which the values are retrieved.
  * @return The last received input values of the GPIO unit.
  */
-char get_ExtPack_data_gpio_in(unit_t unit);
+uint8_t get_ExtPack_data_gpio_in(unit_t unit);
 
 /**
  * Retrieves the last sent values of the given ExtPack GPIO unit's output pins.
@@ -283,7 +301,7 @@ char get_ExtPack_data_gpio_in(unit_t unit);
  * @param unit The GPIO unit of ExtPack from which the values are retrieved.
  * @return The last sent output values of the GPIO unit.
  */
-char get_ExtPack_data_gpio_out(unit_t unit);
+uint8_t get_ExtPack_data_gpio_out(unit_t unit);
 
 // -------------------- Timer interface --------------------
 
@@ -338,7 +356,7 @@ ext_pack_error_t set_ExtPack_timer_start_value(unit_t unit, uint8_t start_value)
  * @param retry_delay_us The delay between two send command attempts. (Usually set between 100-1000us)
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
  */
-ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor, uint8_t start_value, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
+ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor, uint8_t start_value, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
 
 // -------------------------------------- Aliases for Interfaces --------------------------------------
 

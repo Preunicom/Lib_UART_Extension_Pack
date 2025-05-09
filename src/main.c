@@ -2,7 +2,6 @@
 #include <avr/interrupt.h>
 
 #include "../lib/UARTExtPack/src/UARTExtPack.h"
-#include <avr/wdt.h>
 
 #define USED_UNITS 3
 
@@ -13,12 +12,12 @@
 #define unit_U04_TIME unit_U04
 #define unit_U05_SPI unit_U05
 
-void unit_U00_custom_ISR(unit_t, char);
-void unit_U01_custom_ISR(unit_t, char);
-void unit_U02_custom_ISR(unit_t, char);
-void unit_U03_custom_ISR(unit_t, char);
-void unit_U04_custom_ISR(unit_t, char);
-void unit_U05_custom_ISR(unit_t, char);
+void unit_U00_custom_ISR(unit_t, uint8_t);
+void unit_U01_custom_ISR(unit_t, uint8_t);
+void unit_U02_custom_ISR(unit_t, uint8_t);
+void unit_U03_custom_ISR(unit_t, uint8_t);
+void unit_U04_custom_ISR(unit_t, uint8_t);
+void unit_U05_custom_ISR(unit_t, uint8_t);
 
 int main() {
     // Initialize the UART Extension Pack
@@ -41,7 +40,7 @@ int main() {
     }
 }
 
-void unit_U00_custom_ISR(unit_t unit, char data) {
+void unit_U00_custom_ISR(unit_t unit, uint8_t data) {
     // ExtPack was reset
     if ((uint8_t)data == 0xFF) {
         // Reset controller
@@ -49,31 +48,31 @@ void unit_U00_custom_ISR(unit_t unit, char data) {
     }
 }
 
-void unit_U01_custom_ISR(unit_t unit, char data) {
+void unit_U01_custom_ISR(unit_t unit, uint8_t data) {
     // An error occurred
     SEND_MAX_ATTEMPTS(set_ExtPack_gpio_out(unit_U03_GPIO, get_ExtPack_data_gpio_out(unit_U03_GPIO) ^ 0b01), 10, 1000);
 }
 
-void unit_U02_custom_ISR(unit_t unit, char data) {
+void unit_U02_custom_ISR(unit_t unit, uint8_t data) {
     // UART Unit data received
     SEND_MAX_ATTEMPTS(send_ExtPack_UART_data(unit_U02_UART, data), 10, 10);
 }
 
-void unit_U03_custom_ISR(unit_t unit, char data) {
+void unit_U03_custom_ISR(unit_t unit, uint8_t data) {
     // GPIO interrupt received
     if(data == 1) {
-        char string[13] = "Hello World!\n";
+        uint8_t string[13] = "Hello World!\n";
         send_ExtPack_UART_String(unit_U02_UART, string, 1000, 10, 1000);
         send_ExtPack_SPI_String(unit_U05_SPI, string, 1000, 10, 1000);
     }
 }
 
-void unit_U04_custom_ISR(unit_t unit, char data) {
+void unit_U04_custom_ISR(unit_t unit, uint8_t data) {
     // Timer interrupt received
     SEND_MAX_ATTEMPTS(set_ExtPack_gpio_out(unit_U03_GPIO, get_ExtPack_data_gpio_out(unit_U03_GPIO) ^ 0b10), 10, 1000);
 }
 
-void unit_U05_custom_ISR(unit_t unit, char data) {
+void unit_U05_custom_ISR(unit_t unit, uint8_t data) {
     // SPI message received
     if (data != 0) {
         // Got content
