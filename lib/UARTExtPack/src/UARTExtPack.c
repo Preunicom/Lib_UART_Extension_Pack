@@ -288,10 +288,10 @@ ext_pack_error_t send_ExtPack_UART_String(unit_t unit, const uint8_t* data, uint
 // ------------------ SPI_Unit interface -------------------
 
 ext_pack_error_t set_ExtPack_SPI_slave(unit_t unit, uint8_t slave_id) {
-    return send_ExtPack_SPI_data(unit, (char)slave_id);
+    return send_ExtPack_SPI_data(unit, slave_id);
 }
 
-ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, char data) {
+ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, uint8_t data) {
     if(set_ExtPack_SPI_slave(unit, slave_id) == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;
     }

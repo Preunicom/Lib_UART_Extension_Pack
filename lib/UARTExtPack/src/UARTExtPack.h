@@ -248,7 +248,7 @@ ext_pack_error_t set_ExtPack_SPI_slave(unit_t unit, uint8_t slave_id);
  * @param data The data to be sent.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
-ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, char data);
+ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, uint8_t data);
 
 /**
  * Sends a set_ExtPack_SPI_slave control message followed by the given String until '\0' to ExtPack with send chosen mode.
@@ -267,7 +267,7 @@ ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, c
  * @param retry_delay_us The delay between send message attempts. (Usually set between 100-1000us)
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if the function was aborted when sending a char because of an error while sending. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
  */
-ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id, const char* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
+ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id, const uint8_t* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
 
 /**
  * Retrieves the last set SPI slave id of the given ExtPack SPI unit'.
