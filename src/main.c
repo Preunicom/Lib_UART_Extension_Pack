@@ -10,12 +10,14 @@
 #define unit_U02_UART unit_U02
 #define unit_U03_GPIO unit_U03
 #define unit_U04_TIME unit_U04
+#define unit_U05_SPI unit_U05
 
 void unit_U00_custom_ISR(unit_t, uint8_t);
 void unit_U01_custom_ISR(unit_t, uint8_t);
 void unit_U02_custom_ISR(unit_t, uint8_t);
 void unit_U03_custom_ISR(unit_t, uint8_t);
 void unit_U04_custom_ISR(unit_t, uint8_t);
+void unit_U05_custom_ISR(unit_t, uint8_t);
 
 int main() {
     // Initialize the UART Extension Pack
@@ -23,6 +25,7 @@ int main() {
     init_ExtPack_Unit(unit_U02_UART, UART_Unit, unit_U02_custom_ISR);
     init_ExtPack_Unit(unit_U03_GPIO, GPIO_Unit, unit_U03_custom_ISR);
     init_ExtPack_Unit(unit_U04_TIME, Timer_Unit, unit_U04_custom_ISR);
+    init_ExtPack_Unit(unit_U05_SPI, SPI_Unit, unit_U05_custom_ISR);
     /*
      * 50 KHz
      * 250 values are a good divider.
@@ -60,10 +63,19 @@ void unit_U03_custom_ISR(unit_t unit, uint8_t data) {
     if(data == 1) {
         uint8_t string[13] = "Hello World!\n";
         send_ExtPack_UART_String(unit_U02_UART, string, 1000, 10, 1000);
+        send_ExtPack_SPI_String(unit_U05_SPI, string, 1000, 10, 1000);
     }
 }
 
 void unit_U04_custom_ISR(unit_t unit, uint8_t data) {
     // Timer interrupt received
     SEND_MAX_ATTEMPTS(set_ExtPack_gpio_out(unit_U03_GPIO, get_ExtPack_data_gpio_out(unit_U03_GPIO) ^ 0b10), 10, 1000);
+}
+
+void unit_U05_custom_ISR(unit_t unit, uint8_t data) {
+    // SPI message received
+    if (data != 0) {
+        // Got content
+        ;
+    }
 }

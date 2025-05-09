@@ -91,6 +91,12 @@ typedef uint8_t unit_type_t;
 #define Timer_Unit 5
 
 /**
+ * @def SPI_Unit
+ * Constant value representing the SPI (Serial Peripheral Interface) unit type.
+ */
+#define SPI_Unit 6
+
+/**
  * @typedef ext_pack_error_t
  * Type alias for ExtPack errors.
  *
@@ -223,6 +229,54 @@ ext_pack_error_t reset_ExtPack();
  */
 ext_pack_error_t send_ExtPack_UART_String(unit_t unit, const uint8_t* data, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
 
+// ------------------ SPI_Unit interface -------------------
+
+/**
+ * Sets the slave ID of given SPI_Unit of ExtPack via UART control message.
+ *
+ * @param unit The ExtPack unit to which the data should be sent.
+ * @param slave_id The slave id to send following data to.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
+ */
+ext_pack_error_t set_ExtPack_SPI_slave(unit_t unit, uint8_t slave_id);
+
+/**
+ * Sends given data to slave of SPI_Unit of ExtPack by setting the slave id of the unit followed by sending the data to set slave.
+ *
+ * @param unit The ExtPack unit to which the data should be sent.
+ * @param slave_id The slave id to send the data to.
+ * @param data The data to be sent.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
+ */
+ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, char data);
+
+/**
+ * Sends a set_ExtPack_SPI_slave control message followed by the given String until '\0' to ExtPack with send chosen mode.
+ * If a send char operation fails the function aborts (can only happen if max_attempts is not set to zero) and returns an error.
+ *
+ * @note max_attempts equal 1 is equivalent to a set_ExtPack_SPI_slave or a normal send operation per SPI_ExtPack_send.
+ * @note Use max_attempts equal zero for unlimited retries. Please use this only if absolutely necessary.
+ *
+ * @warning Do not use SEND_MAX_ATTEMPTS on this function.
+ *
+ * @param unit The ExtPack unit to which the data should be sent.
+ * @param slave_id The slave id to send the data to.
+ * @param data The data to be sent as String with terminating '\0'.
+ * @param delay_us The delay waited between two sent messages. (Usually set between 100-1000us)
+ * @param max_attempts The maximum attempts to send a message. 0 for unlimited retries.
+ * @param retry_delay_us The delay between send message attempts. (Usually set between 100-1000us)
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if the function was aborted when sending a char because of an error while sending. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
+ */
+ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id, const char* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
+
+/**
+ * Retrieves the last set SPI slave id of the given ExtPack SPI unit'.
+ *
+ * @param unit The SPI unit of ExtPack to which the slave if was sent.
+ * @return The last sent SPI slave id.
+ */
+uint8_t get_ExtPack_data_SPI_current_slave(unit_t unit);
+
 // ------------------ GPIO_Unit interface ------------------
 
 /**
@@ -329,5 +383,21 @@ ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor,
  * This macro invokes `UART_ExtPack_send` to transmit the data.
  */
 #define send_ExtPack_UART_data UART_ExtPack_send
+
+/**
+ * @def send_ExtPack_SPI_data
+ * Alias to send SPI data to the specified SPI unit of ExtPack.
+ *
+ * This macro invokes `UART_ExtPack_send` to transmit the data.
+ */
+#define send_ExtPack_SPI_data UART_ExtPack_send
+
+/**
+ * @def send_ExtPack_SPI_String
+ * Alias to send an SPI string to the specified SPI unit of ExtPack.
+ *
+ * This macro invokes `send_ExtPack_UART_String` to transmit the data.
+ */
+#define send_ExtPack_SPI_String send_ExtPack_UART_String
 
 #endif //LIB_UART_EXTENSION_PACK_FOR_ATMEGA328P_UARTEXTPACK_H
