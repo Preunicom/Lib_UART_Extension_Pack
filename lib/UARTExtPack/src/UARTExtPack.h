@@ -73,16 +73,22 @@ typedef uint8_t unit_type_t;
 #define Error_Unit 2
 
 /**
+ * @def ACK_Unit
+ * Constant value representing the Acknowledge unit type.
+ */
+#define ACK_Unit 3
+
+/**
  * @def GPIO_Unit
  * Constant value representing the GPIO (General Purpose Input/Output) unit type.
  */
-#define GPIO_Unit 3
+#define GPIO_Unit 4
 
 /**
  * @def UART_Unit
  * Constant value representing the UART (Universal Asynchronous Receiver/Transmitter) unit type.
  */
-#define UART_Unit 4
+#define UART_Unit 5
 
 /**
  * @def Timer_Unit
@@ -145,12 +151,14 @@ void delay_ms(unsigned int delay_ms);
  * This function enables USART0, Timer/Counter0 and global interrupts to be able to establish communication.
  * It also initializes unit_U00 as reset unit and unit_U01 as error unit with given ISRs.
  *
-* @param reset_ISR A pointer to the interrupt service routine (ISR) function
+ * @param reset_ISR A pointer to the interrupt service routine (ISR) function
  *                   to be called when the ExtPack got reset.
-* @param error_ISR A pointer to the interrupt service routine (ISR) function
+ * @param error_ISR A pointer to the interrupt service routine (ISR) function
  *                   to be called when the error unit of the ExtPack sends an error.
+ * @param ack_ISR A pointer to the interrupt service routine (ISR) function
+ *                   to be called when the ACK unit of the ExtPack sends an acknowledgment.
  */
-void init_ExtPack(void (*reset_ISR)(unit_t, uint8_t), void (*error_ISR)(unit_t, uint8_t));
+void init_ExtPack(void (*reset_ISR)(unit_t, uint8_t), void (*error_ISR)(unit_t, uint8_t), void (*ack_ISR)(unit_t, uint8_t));
 
 /**
  * Initializes the specified ExtPack unit with the given parameters.
@@ -209,6 +217,50 @@ ext_pack_error_t UART_ExtPack_send(unit_t unit, uint8_t data);
  */
 ext_pack_error_t reset_ExtPack();
 
+// ------------------- ACK_Unit interface ------------------
+
+/**
+ * @def ACK_EVENT
+ * Constant value representing the acknowledge received event x-th bit of unit data output for ACK unit.
+ * Used to shift bits to mask data to match the acknowledge received event bit.
+ */
+#define ACK_EVENT 7
+
+/**
+ * @def ACK_STATE
+ * Constant value representing the status x-th bit of unit data output for ACK unit.
+ * Used to shift bits to mask data to match the ACK unit active/not active bit.
+ */
+#define ACK_STATE 0
+
+/**
+ * Retrieves the status of the ExtPack ACK unit.
+ *
+ * @param unit The ACK unit of ExtPack.
+ * @return active (1) or inactive (0)
+ */
+uint8_t get_ExtPack_ack_state(unit_t unit);
+
+/**
+ * Retrieves the acknowledge received event of the ExtPack ACK unit.
+ * Additionally, it sets the event to not set.
+ *
+ * @param unit The ACK unit of ExtPack.
+ * @return event set (1) or event not set (0)
+ */
+uint8_t get_ExtPack_ack_event(unit_t unit);
+
+/**
+ * Blocks until an acknowledgment of the ACK unit of ExtPack gets received or the timeout is over.
+ *
+ * @param unit The AKC unit of ExtPack.
+ * @param data The data the acknowledgement is expected to be.
+ * @param timeout_us Maximum time awaited in us until the function returns an error.
+ * @return EXT_PACK_SUCCESS if the expected acknowledgement is received before timeout,
+ *         EXT_PACK_FAILURE if the acknowledgement has wrong data or the timeout is reached.
+ */
+ext_pack_error_t wait_for_ExtPack_ACK(unit_t unit, uint8_t data, uint16_t timeout_us);
+
 // ------------------ UART_Unit interface ------------------
 
 /**
@@ -222,7 +274,7 @@ ext_pack_error_t reset_ExtPack();
  *
  * @param unit The ExtPack unit to which the data should be sent.
  * @param data The data to be sent as String with terminating '\0'.
- * @param delay_us The delay waited between two sent chars. (Usually set between 100-1000us)
+ * @param send_delay_us The delay waited between two sent chars. (Usually set between 100-1000us)
  * @param max_attempts The maximum attempts to send a char. 0 for unlimited retries.
  * @param retry_delay_us The delay between send char attempts. (Usually set between 100-1000us)
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if the function was aborted when sending a uint8_t because of an error while sending. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
@@ -367,6 +419,23 @@ ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor,
  * This macro invokes `UART_ExtPack_send` to transmit the data.
  */
 #define send_ExtPack_generic_data UART_ExtPack_send
+
+/**
+ *  @def get_ExtPack_ack_data
+ * Alias to retrieves the acknowledgment received data of the ExtPack ACK unit.
+ *
+ * This macro invokes `get_ExtPack_data_gpio_in` to get the received data.
+ */
+#define get_ExtPack_ack_data get_ExtPack_data_gpio_in
+
+/**
+ * @def set_ExtPack_ACK_enable
+ * Alias to send ACK enable or disable to the ACK unit of ExtPack.
+ *
+ * This macro invokes `set_ExtPack_timer_enable` to transmit the data.
+ * Enable can ether be zero to disable the unit or greater as zero to enable it,
+ */
+#define set_ExtPack_ACK_enable set_ExtPack_timer_enable
 
 /**
  * @def set_ExtPack_gpio_out

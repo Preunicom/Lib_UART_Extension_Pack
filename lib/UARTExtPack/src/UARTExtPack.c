@@ -1,5 +1,6 @@
 #include "UARTExtPack.h"
 #include <stddef.h>
+#include <time.h>
 #include <avr/io.h>
 #include "avr/interrupt.h"
 
@@ -113,7 +114,7 @@ void delay_ms(unsigned int __ms) {
 
 // ---------------------------------------- Initialisation ----------------------------------------
 
-void init_ExtPack(void (*reset_ISR)(unit_t, uint8_t), void (*error_ISR)(unit_t, uint8_t)) {
+void init_ExtPack(void (*reset_ISR)(unit_t, uint8_t), void (*error_ISR)(unit_t, uint8_t), void (*ack_ISR)(unit_t, uint8_t)) {
     /*
      * ---------- Init UART ----------
      * UART packages: 8N1 with 1 MBAUD
@@ -142,6 +143,7 @@ void init_ExtPack(void (*reset_ISR)(unit_t, uint8_t), void (*error_ISR)(unit_t, 
     sei();
     init_ExtPack_Unit(unit_U00, Reset_Unit, reset_ISR);
     init_ExtPack_Unit(unit_U01, Error_Unit, error_ISR);
+    init_ExtPack_Unit(unit_U02, ACK_Unit, ack_ISR);
 }
 
 void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(unit_t, uint8_t)) {
@@ -175,6 +177,9 @@ ext_pack_error_t UART_ExtPack_send(unit_t unit, uint8_t data) {
         } else if (units[unit].unit_type == SPI_Unit && (unit & (1<<ACC_MODE0))) {
             // Save sent SPI slave id
             unit_data[unit].output_values = data;
+        } else if (units[unit].unit_type == ACK_Unit) {
+            // Save ACK state (active/not active)
+            unit_data[unit].output_values &= (~(1<<ACK_STATE) | ((data>0)<<ACK_STATE));
         }
         // Activate data register empty interrupt
         UCSR0B |= (1<<UDRIE0);
@@ -238,6 +243,10 @@ ISR(USART_RX_vect) {
                     // Sets GPIO in values of unit after customISR call to be able to determine interrupted pin in customISR
                     unit_data[received_unit].input_values = received_data;
                     break;
+                case ACK_Unit:
+                    unit_data[received_unit].input_values = received_data;
+                    unit_data[received_data].output_values |= (1<<ACK_EVENT);
+                    break;
             }
             if(custom_ISR != NULL) {
                 // Calls ISR of unit if set
@@ -268,6 +277,39 @@ ISR(TIMER0_OVF_vect) {
 
 ext_pack_error_t reset_ExtPack() {
     return UART_ExtPack_send(unit_U00, 0xFF);
+}
+
+// ------------------ ACK_Unit interface -------------------
+
+uint8_t get_ExtPack_ack_state(unit_t unit) {
+    return unit_data[unit].output_values & (1<<ACK_STATE);
+}
+
+uint8_t get_ExtPack_ack_event(unit_t unit) {
+    uint8_t SREG_temp = SREG;
+    cli(); // Enter critical zone
+    uint8_t event = unit_data[unit].output_values & (1<<ACK_EVENT);
+    unit_data[unit].output_values &= ~(1<<ACK_EVENT); // Reset ACK event
+    SREG = SREG_temp; // exit critical zone
+    return event;
+}
+
+ext_pack_error_t wait_for_ExtPack_ACK(unit_t unit, uint8_t data, uint16_t timeout_us) {
+    for (uint16_t i = 0; i < timeout_us; i++) {
+        _delay_us(1);
+        if (get_ExtPack_ack_event(unit)) {
+            // Acknowledgement received
+            if (unit_data[unit].input_values == data) {
+                // Matching acknowledgment data
+                return EXT_PACK_SUCCESS;
+            } else {
+                // Wrong acknowledgment data
+                return EXT_PACK_FAILURE;
+            }
+        }
+    }
+    // Timeout exceeded
+    return EXT_PACK_FAILURE;
 }
 
 // ------------------ UART_Unit interface ------------------

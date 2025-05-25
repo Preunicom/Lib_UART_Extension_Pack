@@ -29,11 +29,31 @@ This library supports Reset_Unit, Error_Unit, UART_Unit, GPIO_Uni, Timer_Unit an
 
 ### Initialisation
 
-1) Initialize ExtPack with __init_ExtPack(reset_ISR, error_ISR)__
+1) Initialize ExtPack with __init_ExtPack(reset_ISR, error_ISR, ack_ISR)__
 2) Initialize all used units except reset and error units they are already initialized in __init_ExtPack__() with 
    - unit number (__unit_UXX__)
    - unit type (__UART_Unit__, __GPIO_Unit__ or __Timer_Unit__) and
    - your custom ISR (of type __void (*func)(unit_t, char)__)
+
+### get_ExtPack_ack_state() & get_ExtPack_ack_event()
+
+This functions return the state or the event of ExtPack ACK unit. 
+It can be 0 (not active/event not set) or 1 (active/event set).
+
+### wait_for_ExtPack_ACK()
+
+This function blocks until either the timout is reached or an acknowledgement is received.  
+It returns EXT_PACK_SUCCESS or EXT_PACK_FAILURE.  
+**Note**: The ACK_unit ISR is executed _before_ the wait_for_ExtPack_ACK() processes the acknowledgement.  
+
+The unit_data of ACK unit is special:  
+input_values:
+- Bit 0: ACK state (0: not enabled / 1: enabled)  
+- Bit 1-6: Unused  
+- Bit 7: ACK received event (0: not set / 1: set)
+
+output_values:
+- Bit 0-7: data of last received acknowledgment  
 
 ### Timer configuration
 
@@ -95,6 +115,8 @@ it will be stored either. The slave id has to be set again.
 ## Available macros
 
 - __SEND_MAX_ATTEMPTS__(func_call, max_attempts, delay_us)
+- __get_ExtPack_ack_data__(unit)
+- __set_ExtPack_ACK_enable__(unit, enable)
 - __set_ExtPack_gpio_out__(unit_t, char)
 - __send_ExtPack_UART_data__(unit_t, char)
 - __send_ExtPack_SPI_data__(unit_t, char)
