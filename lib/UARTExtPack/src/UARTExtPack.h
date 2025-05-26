@@ -208,6 +208,16 @@ void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(un
  */
 ext_pack_error_t UART_ExtPack_send(unit_t unit, uint8_t data);
 
+/**
+ * Sets a new custom ISR for the given unit of ExtPack.
+ *
+ * @note Use 'NULL' to have no ISR for the unit.
+ *
+ * @param unit The ExtPack unit which ISR should be set.
+ * @param new_custom_ISR The new custom ISR function which is called when an interrupt of the unit occurs.
+ */
+void set_ExtPack_custom_ISR(unit_t unit, void (*new_custom_ISR)(unit_t, uint8_t));
+
 // ------------------- RST_Unit interface ------------------
 
 /**
@@ -234,32 +244,45 @@ ext_pack_error_t reset_ExtPack();
 #define ACK_STATE 0
 
 /**
- * Retrieves the status of the ExtPack ACK unit.
+ * Retrieves the status of the ExtPack ACK unit (unit_U02).
  *
- * @param unit The ACK unit of ExtPack.
  * @return active (1) or inactive (0)
  */
-uint8_t get_ExtPack_ack_state(unit_t unit);
+uint8_t get_ExtPack_ack_state();
 
 /**
- * Retrieves the acknowledge received event of the ExtPack ACK unit.
+ * Clears the acknowledgement received event of the ExtPack ACK unit (unit_U02).
+ */
+void clear_ExtPack_ack_event();
+
+/**
+ * Retrieves the acknowledge received event of the ExtPack ACK unit (unit_U02).
  * Additionally, it sets the event to not set.
  *
- * @param unit The ACK unit of ExtPack.
  * @return event set (1) or event not set (0)
  */
-uint8_t get_ExtPack_ack_event(unit_t unit);
+uint8_t get_ExtPack_ack_event();
 
 /**
- * Blocks until an acknowledgment of the ACK unit of ExtPack gets received or the timeout is over.
+ * Blocks until an acknowledgment of the ACK unit (unit_U02) of ExtPack gets received or the timeout is over.
+ * Also checks ACK data.
  *
- * @param unit The AKC unit of ExtPack.
  * @param data The data the acknowledgement is expected to be.
  * @param timeout_us Maximum time awaited in us until the function returns an error.
  * @return EXT_PACK_SUCCESS if the expected acknowledgement is received before timeout,
  *         EXT_PACK_FAILURE if the acknowledgement has wrong data or the timeout is reached.
  */
-ext_pack_error_t wait_for_ExtPack_ACK(unit_t unit, uint8_t data, uint16_t timeout_us);
+ext_pack_error_t wait_for_ExtPack_ACK_data(uint8_t data, uint16_t timeout_us);
+
+/**
+ * Blocks until an acknowledgment of the ACK unit (unit_U02) of ExtPack gets received or the timeout is over.
+ * Does not compare ACK data.
+ *
+ * @param timeout_us Maximum time awaited in us until the function returns an error.
+ * @return EXT_PACK_SUCCESS if an acknowledgement for the given unit is received before timeout,
+ *         EXT_PACK_FAILURE if the timeout is reached.
+ */
+ext_pack_error_t wait_for_ExtPack_ACK(uint16_t timeout_us);
 
 // ------------------ UART_Unit interface ------------------
 
@@ -403,7 +426,7 @@ ext_pack_error_t set_ExtPack_timer_start_value(unit_t unit, uint8_t start_value)
  * @param unit The Timer unit of ExtPack which to configure.
  * @param prescaler_divisor The prescaler divisor value to be applied.
  * @param start_value The start value to be applied.
- * @param delay_us The delay waited between two sent commands. (Usually set between 100-1000us)
+ * @param send_delay_us The delay waited between two sent commands. (Usually set between 100-1000us)
  * @param max_attempts The maximum attempts to send a command. 0 for unlimited retries.
  * @param retry_delay_us The delay between two send command attempts. (Usually set between 100-1000us)
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
@@ -424,18 +447,18 @@ ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor,
  *  @def get_ExtPack_ack_data
  * Alias to retrieves the acknowledgment received data of the ExtPack ACK unit.
  *
- * This macro invokes `get_ExtPack_data_gpio_in` to get the received data.
+ * This macro invokes `get_ExtPack_data_gpio_in` with unit_U02 as unit to get the received data.
  */
-#define get_ExtPack_ack_data get_ExtPack_data_gpio_in
+#define get_ExtPack_ack_data() get_ExtPack_data_gpio_in(unit_U02)
 
 /**
  * @def set_ExtPack_ACK_enable
  * Alias to send ACK enable or disable to the ACK unit of ExtPack.
  *
- * This macro invokes `set_ExtPack_timer_enable` to transmit the data.
- * Enable can ether be zero to disable the unit or greater as zero to enable it,
+ * This macro invokes `set_ExtPack_timer_enable` with the given enable value as enable and unit_U02 as unit to transmit the data.
+ * Enable can ether be zero to disable the unit or greater as zero to enable it.
  */
-#define set_ExtPack_ACK_enable set_ExtPack_timer_enable
+#define set_ExtPack_ACK_enable(enable) set_ExtPack_timer_enable(unit_U02, enable)
 
 /**
  * @def set_ExtPack_gpio_out

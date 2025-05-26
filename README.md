@@ -35,16 +35,34 @@ This library supports Reset_Unit, Error_Unit, UART_Unit, GPIO_Uni, Timer_Unit an
    - unit type (__UART_Unit__, __GPIO_Unit__ or __Timer_Unit__) and
    - your custom ISR (of type __void (*func)(unit_t, char)__)
 
+### reset_ExtPack()
+
+Resets the ExtPack.
+**WARNING**: Be cautious when resetting the microcontroller in the custom ISR of the reset unit combined with 
+resetting the ExtPack when initializing the microcontroller. This leads to an endless reset loop.  
+You can avoid this by setting the custom ISR to "NULL" initially and setting it after resetting the ExtPack at startup.
+You can use "set_ExtPack_custom_ISR()" for it.
+
+### set_ExtPack_custom_ISR()
+
+Sets a new custom ISR for the given unit at runtime.
+
 ### get_ExtPack_ack_state() & get_ExtPack_ack_event()
 
 This functions return the state or the event of ExtPack ACK unit. 
 It can be 0 (not active/event not set) or 1 (active/event set).
 
-### wait_for_ExtPack_ACK()
+### wait_for_ExtPack_ACK_data() & wait_for_ExtPack_ACK()
 
-This function blocks until either the timout is reached or an acknowledgement is received.  
-It returns EXT_PACK_SUCCESS or EXT_PACK_FAILURE.  
+These functions blocks until either the timout is reached or an acknowledgement is received.  
+They return EXT_PACK_SUCCESS or EXT_PACK_FAILURE.  
+The difference between the two functions is that the data function also checks the data of the ACK.
+The other one takes every ACK for the given unit.  
 **Note**: The ACK_unit ISR is executed _before_ the wait_for_ExtPack_ACK() processes the acknowledgement.  
+**Note**: Only one function can use "get_ExtPack_ack_event()" per ACK event because it resets the event.
+Both functions use "get_ExtPack_ack_event()" and can therefore not be combined.  
+**WARNING**: Do not send data in the ACK ISR as is will result in an endless loop of sending 
+because of an ACK and getting ACKs for it which trigger sending again.
 
 The unit_data of ACK unit is special:  
 input_values:
@@ -97,7 +115,13 @@ it will be stored either. The slave id has to be set again.
 - void __init_ExtPack__(void (*reset_ISR)(unit_t, char), void (*error_ISR)(unit_t, char))
 - void __init_ExtPack_Unit__(unit_t, unit_type, void (*custom_ISR)(unit_t, char))
 - ext_pack_error_t __UART_ExtPack_send__(unit_t, char)
+- void __set_ExtPack_custom_ISR__(unit_t, void (*new_custom_ISR)(unit_t, char))
 - ext_pack_error_t __reset_ExtPack__()
+- uint8_t __get_ExtPack_ack_state__();
+- void __clear_ExtPack_ack_event__();
+- uint8_t __get_ExtPack_ack_event__();
+- ext_pack_error_t __wait_for_ExtPack_ACK_data__(uint8_t, uint16_t);
+- ext_pack_error_t __wait_for_ExtPack_ACK__(uint16_t);
 - ext_pack_error_t __send_ExtPack_UART_String__(unit_t, const char*, uint16_t, uint8_t, uint16_t)
 - ext_pack_error_t __refresh_ExtPack_gpio_data__(unit_t)
 - char __get_ExtPack_data_gpio_in__(unit_t)
@@ -115,8 +139,8 @@ it will be stored either. The slave id has to be set again.
 ## Available macros
 
 - __SEND_MAX_ATTEMPTS__(func_call, max_attempts, delay_us)
-- __get_ExtPack_ack_data__(unit)
-- __set_ExtPack_ACK_enable__(unit, enable)
+- __get_ExtPack_ack_data__()
+- __set_ExtPack_ACK_enable__(enable)
 - __set_ExtPack_gpio_out__(unit_t, char)
 - __send_ExtPack_UART_data__(unit_t, char)
 - __send_ExtPack_SPI_data__(unit_t, char)

@@ -151,6 +151,10 @@ void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(un
     units[unit].custom_ISR = custom_ISR;
 }
 
+void set_ExtPack_custom_ISR(unit_t unit, void (*new_custom_ISR)(unit_t, uint8_t)) {
+    units[unit].custom_ISR = new_custom_ISR;
+}
+
 // ---------------------------------------- Sending ----------------------------------------
 
 /*
@@ -245,7 +249,7 @@ ISR(USART_RX_vect) {
                     break;
                 case ACK_Unit:
                     unit_data[received_unit].input_values = received_data;
-                    unit_data[received_data].output_values |= (1<<ACK_EVENT);
+                    unit_data[received_unit].output_values |= (1<<ACK_EVENT);
                     break;
             }
             if(custom_ISR != NULL) {
@@ -281,31 +285,47 @@ ext_pack_error_t reset_ExtPack() {
 
 // ------------------ ACK_Unit interface -------------------
 
-uint8_t get_ExtPack_ack_state(unit_t unit) {
-    return unit_data[unit].output_values & (1<<ACK_STATE);
+uint8_t get_ExtPack_ack_state() {
+    return unit_data[unit_U02].output_values & (1<<ACK_STATE);
 }
 
-uint8_t get_ExtPack_ack_event(unit_t unit) {
+void clear_ExtPack_ack_event() {
+    unit_data[unit_U02].output_values &= ~(1<<ACK_EVENT);
+}
+
+uint8_t get_ExtPack_ack_event() {
     uint8_t SREG_temp = SREG;
     cli(); // Enter critical zone
-    uint8_t event = unit_data[unit].output_values & (1<<ACK_EVENT);
-    unit_data[unit].output_values &= ~(1<<ACK_EVENT); // Reset ACK event
+    uint8_t event = unit_data[unit_U02].output_values & (1<<ACK_EVENT);
+    unit_data[unit_U02].output_values &= ~(1<<ACK_EVENT); // Reset ACK event
     SREG = SREG_temp; // exit critical zone
-    return event;
+    return (event > 0);
 }
 
-ext_pack_error_t wait_for_ExtPack_ACK(unit_t unit, uint8_t data, uint16_t timeout_us) {
+ext_pack_error_t wait_for_ExtPack_ACK_data(uint8_t data, uint16_t timeout_us) {
     for (uint16_t i = 0; i < timeout_us; i++) {
         _delay_us(1);
-        if (get_ExtPack_ack_event(unit)) {
+        if (get_ExtPack_ack_event()) {
             // Acknowledgement received
-            if (unit_data[unit].input_values == data) {
+            if (unit_data[unit_U02].input_values == data) {
                 // Matching acknowledgment data
                 return EXT_PACK_SUCCESS;
             } else {
                 // Wrong acknowledgment data
                 return EXT_PACK_FAILURE;
             }
+        }
+    }
+    // Timeout exceeded
+    return EXT_PACK_FAILURE;
+}
+
+ext_pack_error_t wait_for_ExtPack_ACK(uint16_t timeout_us) {
+    for (uint16_t i = 0; i < timeout_us; i++) {
+        _delay_us(1);
+        if (get_ExtPack_ack_event()) {
+            // Acknowledgement received
+            return EXT_PACK_SUCCESS;
         }
     }
     // Timeout exceeded

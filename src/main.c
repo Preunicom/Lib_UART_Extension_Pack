@@ -23,11 +23,11 @@ void unit_U06_custom_ISR(unit_t, uint8_t);
 
 int main() {
     // Initialize the UART Extension Pack
-    init_ExtPack(unit_U00_custom_ISR, unit_U01_custom_ISR, unit_U02_custom_ISR);
-    init_ExtPack_Unit(unit_U03_UART, UART_Unit, unit_U02_custom_ISR);
-    init_ExtPack_Unit(unit_U04_GPIO, GPIO_Unit, unit_U03_custom_ISR);
-    init_ExtPack_Unit(unit_U05_TIME, Timer_Unit, unit_U04_custom_ISR);
-    init_ExtPack_Unit(unit_U06_SPI, SPI_Unit, unit_U05_custom_ISR);
+    init_ExtPack(NULL, unit_U01_custom_ISR, unit_U02_custom_ISR);
+    init_ExtPack_Unit(unit_U03_UART, UART_Unit, unit_U03_custom_ISR);
+    init_ExtPack_Unit(unit_U04_GPIO, GPIO_Unit, unit_U04_custom_ISR);
+    init_ExtPack_Unit(unit_U05_TIME, Timer_Unit, unit_U05_custom_ISR);
+    init_ExtPack_Unit(unit_U06_SPI, SPI_Unit, unit_U06_custom_ISR);
     /*
      * 50 KHz
      * 250 values are a good divider.
@@ -36,7 +36,14 @@ int main() {
      * ----> pre scaled: 50KHz / 250 = 200 Hz
      * ----> counted: 200KHz / 200 = 1 Hz
      */
+    reset_ExtPack();
+    _delay_us(100);
+    set_ExtPack_custom_ISR(unit_U00_RST, unit_U00_custom_ISR);
     configure_ExtPack_timer(unit_U05_TIME, 250, 56, 1000, 10, 1000);
+    clear_ExtPack_ack_event();
+    while (wait_for_ExtPack_ACK_data(1, 100) != EXT_PACK_SUCCESS) {
+        set_ExtPack_ACK_enable(1);
+    }
     while(1) {
         ;
     }
