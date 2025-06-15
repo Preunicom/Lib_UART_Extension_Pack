@@ -7,52 +7,82 @@ ATMega328P communicates with the UART_Extension_Pack with 8N1 and 1 MBaud.
 ## Functionality
 ### Units
 
-This library supports Reset_Unit, Error_Unit, UART_Unit, GPIO_Uni, Timer_Unit and SPI_Unit on the ExtPack.  
+This library supports Reset_Unit, Error_Unit, ACK_Unit, UART_Unit, GPIO_Uni, Timer_Unit, SPI_Unit and I2C_Unit on the ExtPack.  
 
 ### Functions
 
 #### Transmitting
 
 - Reset ExtPack
-- Sending UART data
+- Enable/Disable ACK
 - Setting GPIO output values
-- Configure timer
+- Request GPIO input pin data
+- Configure timer (enable, restart, prescaler, start value)
+- Sending UART data
 - Sending SPI data
+- Setting SPI slave id
+- Sending I2C data
+- Setting I2C partner address
 
 #### Receiving
 
 - custom ISRs for all units can be implemented (act like interrupted from the unit itself)
 - GPIO has an extra feature with saving the last in- and output values to have current values accessible
 - SPI also stores the last set slave id to be able to minimize control message overhead
+- I2C stores the last set partner address and the last received data byte.
+- Acknowledge management of ACK_Unit (wait for ACK, ACK event set/clear, read ACK data)
 
 ## Usage
 
 ### Initialisation
 
 1) Initialize ExtPack with __init_ExtPack(reset_ISR, error_ISR, ack_ISR)__
-2) Initialize all used units except reset and error units they are already initialized in __init_ExtPack__() with 
+2) Initialize all used units except reset, error and ack units (they are already initialized in __init_ExtPack__()) with 
    - unit number (__unit_UXX__)
    - unit type (__UART_Unit__, __GPIO_Unit__ or __Timer_Unit__) and
    - your custom ISR (of type __void (*func)(unit_t, char)__)
 
-### reset_ExtPack()
+### Reset_Unit
+
+#### reset_ExtPack()
 
 Resets the ExtPack.
-**WARNING**: Be cautious when resetting the microcontroller in the custom ISR of the reset unit combined with 
+**WARNING**: Be cautious when resetting the microcontroller in the custom ISR of the reset unit combined with
 resetting the ExtPack when initializing the microcontroller. This leads to an endless reset loop.  
 You can avoid this by setting the custom ISR to "NULL" initially and setting it after resetting the ExtPack at startup.
 You can use "set_ExtPack_custom_ISR()" for it.
 
-### set_ExtPack_custom_ISR()
+### Error_Unit
 
-Sets a new custom ISR for the given unit at runtime.
+This unit receives errors of ExtPack.
+The ExtPack sends status messages about errors.
+The exact interpretation of bits in the received error data can be found in the ExtPack documentation:
+***
+The message structure is shown in the following:
+- Bit 0: Indicates a UART error when receiving UART data from the host.
+- Bit 1: Indicates an error of any unit while sending data to host. (for example because of too slow scheduling)
+- Bit 2: Indicates an error of any unit while processing data from the host. (for example when the UART Unit can not send data as the unit still processes the last data)
+  All other bits are zero.
+***
+If you wish to process the received data in detail you have to use this information and process it.
 
-### get_ExtPack_ack_state() & get_ExtPack_ack_event()
+### ACK_Unit
 
-This functions return the state or the event of ExtPack ACK unit. 
+#### set_ExtPack_ACK_enable()
+
+Sends a enable/disable message.  
+**Note:** This message is acknowledged by the ExtPack.
+
+#### get_ExtPack_ack_state() & get_ExtPack_ack_event() & clear_ExtPack_ack_event()
+
+This functions return the state or the event of ExtPack ACK unit.
 It can be 0 (not active/event not set) or 1 (active/event set).
 
-### wait_for_ExtPack_ACK_data() & wait_for_ExtPack_ACK()
+#### get_ExtPack_ack_data()
+
+Returns the data which was acknowledged by the ExtPack.
+
+#### wait_for_ExtPack_ACK_data() & wait_for_ExtPack_ACK()
 
 These functions blocks until either the timout is reached or an acknowledgement is received.  
 They return EXT_PACK_SUCCESS or EXT_PACK_FAILURE.  
@@ -61,23 +91,117 @@ The other one takes every ACK for the given unit.
 **Note**: The ACK_unit ISR is executed _before_ the wait_for_ExtPack_ACK() processes the acknowledgement.  
 **Note**: Only one function can use "get_ExtPack_ack_event()" per ACK event because it resets the event.
 Both functions use "get_ExtPack_ack_event()" and can therefore not be combined.  
-**WARNING**: Do not send data in the ACK ISR as is will result in an endless loop of sending 
+**WARNING**: Do not send data in the ACK ISR as is will result in an endless loop of sending
 because of an ACK and getting ACKs for it which trigger sending again.
 
 The unit_data of ACK unit is special:  
-input_values:
-- Bit 0: ACK state (0: not enabled / 1: enabled)  
-- Bit 1-6: Unused  
+output_values:
+- Bit 0: ACK state (0: not enabled / 1: enabled)
+- Bit 1-6: Unused
 - Bit 7: ACK received event (0: not set / 1: set)
 
-output_values:
-- Bit 0-7: data of last received acknowledgment  
+input_values:
+- Bit 0-7: data of last received acknowledgment
 
-### Timer configuration
+### GPIO_Unit
 
-Use __configure_ExtPack_timer()__ with your config values to set the timer up.
+#### get_ExtPack_data_gpio_in() / get_ExtPack_data_gpio_out()
 
-### SEND_MAX_ATTEMPTS()
+These functions do not communicate with the ExtPack.  
+They take the last received/sent data.  
+To refresh this data use __refresh_ExtPack_gpio_data__.
+
+#### refresh_ExtPack_gpio_data()
+
+Requests the current input data of the GPIO_Unit from the ExtPack.
+
+#### set_ExtPack_gio_out()
+
+Sets new GPIO output values at the ExtPack.
+
+### Communication Units (UART_Unit, SPI_Unit, I2C_Unit)
+
+#### send_ExtPack_UART_data() & send_ExtPack_SPI_data() & send_ExtPack_I2C_data()
+
+Sends a single byte of data to the specified communication unit (UART, SPI, or I2C) of the Extension Pack.
+
+#### send_ExtPack_UART_String() & send_ExtPack_SPI_String() & send_ExtPack_I2C_String()
+
+Sends the String to a UART/SPI unit of ExtPack without the trailing '\0'.  
+Make sure the string ends with a '\0'!
+
+#### set_ExtPack_SPI_slave() & set_ExtPack_I2C_partner_adr()
+
+Configures the SPI unit’s slave ID or the I2C unit’s partner address for subsequent communication with the Extension Pack.
+
+#### get_ExtPack_data_SPI_current_slave() & get_ExtPack_data_I2C_current_partner_adr()
+
+This function does not communicate with the ExtPack.
+They take the last sent slave id as the SPI/I2C Unit stores it for further messages.
+**WARNING:** If there is an error while sending the slave id/partner address (for example it does not reach the ExtPack or is invalid)
+it will be stored either. The slave id/partner address has to be set again.
+
+#### send_ExtPack_SPI_String_to_slave() & send_ExtPack_I2C_String_to_partner()
+
+Selects the specified SPI slave or I2C partner and sends a string without the trailing \0 to it by sennding it byte by byte. 
+The string must include terminating '\0'!
+
+#### send_ExtPack_SPI_data_to_slave() & send_ExtPack_I2C_data_to_partner()
+
+Sets the target SPI slave or I2C partner and transmits a single byte of data to it as part of one combined command sequence.
+
+#### get_ExtPack_data_I2C_last_received_data()
+
+Retrieves the last received data byte stored by the I2C unit.
+This function does not initiate a new transfer.
+
+#### receive_ExtPack_I2C_data()
+
+Requests one byte of data from the currently set I2C partner.
+The received byte will be returned via the custom ISR and stored internally.
+
+#### receive_ExtPack_I2C_data_from_partner()
+
+Sets the I2C partner address and requests a single data byte.
+The result is provided through the custom ISR and stored internally.
+
+#### Notes: I2C
+
+The last received byte is stored to be able to processed in the main program flow.
+To archive multiple bytes in one transaction without repeated start the bytes have to be sent with the same access mode (send/receive)
+to the same partner address. Additionally, the following byte has to be sent while the one before is being transmitted by the ExtPack.
+With more than two bytes there has to be a more complex program logic.
+You have to send the next byte repeatedly until you do not receive an error because the ExtPack was not ready.
+
+### Timer_Unit
+
+#### configure_ExtPack_timer()
+
+Sets the timer up in the recommended order with your config values.
+
+#### set_ExtPack_timer_prescaler()
+
+Sends the prescaler divisor to the specified Timer unit to adjust its counting speed.
+
+#### set_ExtPack_enable()
+
+Enables or disables the specified Timer unit; enabling (Param: >1) starts the timer counting, disabling (Param: 0) stops it.
+
+#### set_ExtPack_start_value()
+
+Sets the initial count value for the specified Timer unit.
+
+#### restart_ExtPack_timer()
+
+Restarts the specified Timer unit by resetting its counter to the configured start value.
+
+### General information
+
+#### set_ExtPack_custom_ISR()
+
+Sets a new custom ISR for the given unit at runtime.
+
+#### SEND_MAX_ATTEMPTS()
 
 The __SEND_MAX_ATTEMPTS__ macro calls your function max_attempts times until the function returns __EXT_PACK_SUCCESS__.  
 This means you can not use the macro on __configure_ExtPack_timer()__ or __send_ExtPack_UART_String()__ as they contain more than one command.  
@@ -92,68 +216,6 @@ When __max_attempts__ is equal to zero there is no effect of __retry_delay_us__.
 
 Some functions like __send_ExtPack_UART_String()__ use SEND_MAX_ATTEMPTS and take these parameters in their own signature.
 
-### send_ExtPack_UART_String() & send_ExtPack_SPI_String_to_slave
-
-Sends the String to a UART/SPI unit of ExtPack without the trailing '\0'.  
-Make sure the string ends with a '\0'!
-
-### set_ExtPack_data_gpio_out() / get_ExtPack_data_gpio_out()
-
-These functions do not communicate with the ExtPack.  
-They take the last received/sent data.  
-To refresh this data use __refresh_ExtPack_gpio_data__.
-
-### get_ExtPack_data_SPI_current_slave()
-
-This function does not communicate with the ExtPack.
-They take the last sent slave id as the SPI Unit stores it for further messages.
-**WARNING:** If there is an error while sending the slave id (for example it does not reach the ExtPack or is invalid)
-it will be stored either. The slave id has to be set again.
-
-### I2C
-The I2C functions are similar to the SPI functions.  
-The last received byte is stored to be able to processed in the main program flow.
-To archive multiple bytes in one transaction without repeated start the bytes have to be sent with the same access mode (send/receive) 
-to the same partner address. Additionally, the following byte has to be sent while the one before is being transmitted by the ExtPack.
-With more than two bytes there has to be a more complex program logic. 
-You have to send the next byte repeatedly until you did not received an error because the ExtPack was not ready.
-
-## Available functions
-
-- void __init_ExtPack__(void (*reset_ISR)(unit_t, char), void (*error_ISR)(unit_t, char))
-- void __init_ExtPack_Unit__(unit_t, unit_type, void (*custom_ISR)(unit_t, char))
-- ext_pack_error_t __UART_ExtPack_send__(unit_t, char)
-- void __set_ExtPack_custom_ISR__(unit_t, void (*new_custom_ISR)(unit_t, char))
-- ext_pack_error_t __reset_ExtPack__()
-- uint8_t __get_ExtPack_ack_state__();
-- void __clear_ExtPack_ack_event__();
-- uint8_t __get_ExtPack_ack_event__();
-- ext_pack_error_t __wait_for_ExtPack_ACK_data__(uint8_t, uint16_t);
-- ext_pack_error_t __wait_for_ExtPack_ACK__(uint16_t);
-- ext_pack_error_t __send_ExtPack_UART_String__(unit_t, const char*, uint16_t, uint8_t, uint16_t)
-- ext_pack_error_t __refresh_ExtPack_gpio_data__(unit_t)
-- char __get_ExtPack_data_gpio_in__(unit_t)
-- char __get_ExtPack_data_gpio_out__(unit_t)
-- ext_pack_error_t __set_ExtPack_timer_enable__(unit_t, uint8_t)
-- ext_pack_error_t __restart_ExtPack_timer__(unit_t)
-- ext_pack_error_t __set_ExtPack_timer_prescaler__(unit_t, uint8_t);
-- ext_pack_error_t __set_ExtPack_timer_start_value__(unit_t, uint8_t);
-- ext_pack_error_t __configure_ExtPack_timer__(unit_t, uint8_t, uint8_t, uint16_t, uint8_t, uint16_t)
-- ext_pack_error_t __set_ExtPack_SPI_slave__(unit_t, uint8_t)
-- ext_pack_error_t __send_ExtPack_SPI_data_to_slave__(unit_t, uint8_t, char)
-- ext_pack_error_t __send_ExtPack_SPI_String_to_slave__(unit_t, uint8_t, const char*, uint16_t, uint8_t, uint16_t)
-- uint8_t __get_ExtPack_data_SPI_current_slave__(unit_t)
-
-## Available macros
-
-- __SEND_MAX_ATTEMPTS__(func_call, max_attempts, delay_us)
-- __get_ExtPack_ack_data__()
-- __set_ExtPack_ACK_enable__(enable)
-- __set_ExtPack_gpio_out__(unit_t, char)
-- __send_ExtPack_UART_data__(unit_t, char)
-- __send_ExtPack_SPI_data__(unit_t, char)
-- __send_ExtPack_SPI_String__(unit_t, const char*, uint16_t, uint8_t, uint16_t)
-
 ## Available types
 
 - unit_t
@@ -166,6 +228,7 @@ You have to send the next byte repeatedly until you did not received an error be
 
 - unit_U00 (reset unit)
 - unit_U01 (error unit)
+- unitU02 (ack unit)
 - ...
 - unit_U62
 - unit_U63
@@ -178,12 +241,9 @@ You have to send the next byte repeatedly until you did not received an error be
 - UART_Unit
 - Timer_Unit
 - SPI_Unit
+- I2C_Unit
 
 ### ext_pack_error_t
 
 - EXT_PACK_SUCCESS
 - EXT_PACK_FAILURE
-
-
-# TODO
-Rework structure of README to logically support the Unit structure of ExtPack

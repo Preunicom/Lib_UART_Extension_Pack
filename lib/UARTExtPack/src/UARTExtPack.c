@@ -378,6 +378,8 @@ ext_pack_error_t wait_for_ExtPack_ACK(uint16_t timeout_us) {
     return EXT_PACK_FAILURE;
 }
 
+// ----------------- ERROR_Unit interface ------------------
+
 // ------------------ UART_Unit interface ------------------
 
 // ------------------ SPI_Unit interface -------------------
