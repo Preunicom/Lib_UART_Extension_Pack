@@ -1,6 +1,5 @@
 #include "UARTExtPack.h"
 #include <stddef.h>
-#include <time.h>
 #include <avr/io.h>
 #include "avr/interrupt.h"
 
@@ -8,21 +7,21 @@
 
 /**
  * @def USED_UNITS
- * Defines the number of used units. This value should be overwritten later.
+ * @brief Defines the number of used units. This value should be overwritten later.
  *
  * @note This constant is a placeholder for the actual number of units in use.
  */
 #define USED_UNITS 64
 
 /**
- * @def ACC_MODE0
- * Defines bit 6 of the unit_number package to represent access mode 0.
+ * @def ACC_MODE0_BIT
+ * @brief Defines bit 6 of the unit_number package to represent the lower access mode bit.
  */
 #define ACC_MODE0_BIT 6
 
 /**
  * @def ACC_MODE1_BIT
- * Defines bit 7 of the unit_number package to represent access mode 1.
+ * @brief Defines bit 7 of the unit_number package to represent the higher access mode bit.
  */
 #define ACC_MODE1_BIT 7
 
@@ -86,10 +85,28 @@ struct unit_data_storage unit_data[USED_UNITS] = {0};
 #define BAUD_RATE 1000000
 #define BAUD_CONST (((F_CPU/(BAUD_RATE*16UL)))-1)
 
+/**
+ * @def state_type
+ * @brief Type alias for the UART receive state machine state.
+ */
 #define state_type uint8_t
 
+/**
+ * @def RECV_UNIT_NEXT_STATE
+ * @brief UART receive state where a unit identifier byte is expected next.
+ */
 #define RECV_UNIT_NEXT_STATE 0
+
+/**
+ * @def RECV_DATA_NEXT_STATE
+ * @brief UART receive state where the data byte is expected next.
+ */
 #define RECV_DATA_NEXT_STATE 1
+
+/**
+ * @def RECV_INVALID_UNIT
+ * @brief UART receive state indicating an invalid unit identifier was received.
+ */
 #define RECV_INVALID_UNIT 2
 
 state_type recv_state = RECV_UNIT_NEXT_STATE;
@@ -246,19 +263,20 @@ ISR(USART_RX_vect) {
             switch (units[received_unit].unit_type) {
                 case UNDEFINED:
                     return; // Ends receive because no unit type is chosen
-                case GPIO_Unit || I2C_Unit:
+                case GPIO_Unit:
+                case I2C_Unit:
                     // Saves the last received values of the unit to be able to get it in the main program flow.
                     unit_data[received_unit].input_values = received_data;
                     break;
                 case ACK_Unit:
                     /*
                      * Saves ACK data:
-                     *  input_values:
+                     *  output_values:
                      *      Bit 0: ACK state (0: not enabled / 1: enabled)
                      *      Bit 1-6: Unused
                      *      Bit 7: ACK received event (0: not set / 1: set)
                      *
-                     *  output_values:
+                     *  input_values:
                      *      Bit 0-7: data of last received acknowledgment
                      */
                     unit_data[received_unit].input_values = received_data;
@@ -297,7 +315,7 @@ uint8_t get_ExtPack_stored_unit_output_values(unit_t unit) {
 }
 
 uint8_t get_ExtPack_stored_unit_input_values(unit_t unit) {
-    return unit_data[unit].output_values;
+    return unit_data[unit].input_values;
 }
 
 ext_pack_error_t send_String_to_ExtPack(unit_t unit, const uint8_t* data, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
