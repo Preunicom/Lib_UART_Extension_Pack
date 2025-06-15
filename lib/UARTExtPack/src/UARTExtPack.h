@@ -103,6 +103,12 @@ typedef uint8_t unit_type_t;
 #define SPI_Unit 6
 
 /**
+ * @def I2C_Unit
+ * Constant value representing the I2C/TWI (Inter-Integrated Circuit/Two Wire Interface) unit type.
+ */
+#define I2C_Unit 7
+
+/**
  * @typedef ext_pack_error_t
  * Type alias for ExtPack errors.
  *
@@ -337,20 +343,80 @@ ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, u
  * @param unit The ExtPack unit to which the data should be sent.
  * @param slave_id The slave id to send the data to.
  * @param data The data to be sent as String with terminating '\0'.
+ * @param send_delay_us The delay waited between two sent messages. (Usually set between 100-1000us)
+ * @param max_attempts The maximum attempts to send a message. 0 for unlimited retries.
+ * @param retry_delay_us The delay between send message attempts. (Usually set between 100-1000us)
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if the function was aborted when sending a char because of an error while sending. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
+ */
+ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id, const uint8_t* data, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
+
+/**
+ * Retrieves the last set SPI slave id of the given ExtPack SPI unit'.
+ *
+ * @param unit The SPI unit of ExtPack to get the current set slave id from.
+ * @return The last sent SPI slave id.
+ */
+uint8_t get_ExtPack_data_SPI_current_slave(unit_t unit);
+
+// ------------------ I2C_Unit interface -------------------
+
+/**
+ * Retrieves the last set I2C partner address of the given ExtPack I2C unit.
+ *
+ * @param unit The I2C unit of ExtPack to get the current set partner address from.
+ * @return The last sent I2C slave id.
+ */
+uint8_t get_ExtPack_data_I2C_current_slave(unit_t unit);
+
+/**
+ * Request an byte from the currently set partner of the I2C_Unit of ExtPack.
+ *
+ * @note The received data will not be returned. Use the custom ISR to work with the received data.
+ *
+ * @param unit The I2C unit of ExtPack to receive data from.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
+ */
+ext_pack_error_t receive_ExtPack_I2C_data(unit_t unit);
+
+/**
+ * Request a byte from given partner and set the partner in the I2C_Unit of ExtPack.
+ *
+ * @note The received data will not be returned. Use the custom ISR to work with the received data.
+ *
+ * @param unit The I2C unit of ExtPack to receive data from.
+ * @param partner_adr The partner address to get data from.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
+ */
+ext_pack_error_t receive_ExtPack_I2C_data_from_partner(unit_t unit, uint8_t partner_adr);
+
+/**
+ * Sends given data to slave of I2C_Unit of ExtPack by setting the partner adr of the unit followed by sending the data to set slave.
+ *
+ * @param unit The ExtPack unit to which the data should be sent.
+ * @param partner_adr The partner address to send the data to.
+ * @param data The data to be sent.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
+ */
+ext_pack_error_t send_ExtPack_I2C_data_to_partner(unit_t unit, uint8_t partner_adr, uint8_t data);
+
+/**
+ * Sends a set_ExtPack_I2C_partner_adr control message followed by the given String until '\0' to ExtPack with send chosen mode.
+ * If a send char operation fails the function aborts (can only happen if max_attempts is not set to zero) and returns an error.
+ *
+ * @note max_attempts equal 1 is equivalent to a set_ExtPack_I2C_partner_adr or a normal send operation per I2C_ExtPack_send.
+ * @note Use max_attempts equal zero for unlimited retries. Please use this only if absolutely necessary.
+ *
+ * @warning Do not use SEND_MAX_ATTEMPTS on this function.
+ *
+ * @param unit The ExtPack unit to which the data should be sent.
+ * @param partner_adr The partner address to send the data to.
+ * @param data The data to be sent as String with terminating '\0'.
  * @param delay_us The delay waited between two sent messages. (Usually set between 100-1000us)
  * @param max_attempts The maximum attempts to send a message. 0 for unlimited retries.
  * @param retry_delay_us The delay between send message attempts. (Usually set between 100-1000us)
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if the function was aborted when sending a char because of an error while sending. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
  */
-ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id, const uint8_t* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
-
-/**
- * Retrieves the last set SPI slave id of the given ExtPack SPI unit'.
- *
- * @param unit The SPI unit of ExtPack to which the slave if was sent.
- * @return The last sent SPI slave id.
- */
-uint8_t get_ExtPack_data_SPI_current_slave(unit_t unit);
+ext_pack_error_t send_ExtPack_I2C_String_to_partner(unit_t unit, uint8_t partner_adr, const uint8_t* data, uint16_t delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
 
 // ------------------ GPIO_Unit interface ------------------
 
@@ -491,5 +557,38 @@ ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor,
  * This macro invokes `send_ExtPack_UART_String` to transmit the data.
  */
 #define send_ExtPack_SPI_String send_ExtPack_UART_String
+
+/**
+ * @def send_ExtPack_I2C_data
+ * Alias to send I2C data to the specified I2C unit of ExtPack.
+ *
+ * This macro invokes `UART_ExtPack_send` to transmit the data.
+ */
+#define send_ExtPack_I2C_data UART_ExtPack_send
+
+/**
+ * @def send_ExtPack_I2C_String
+ * Alias to send an I2C string to the specified I2C unit of ExtPack.
+ *
+ * This macro invokes `send_ExtPack_UART_String` to transmit the data.
+ */
+#define send_ExtPack_I2C_String send_ExtPack_UART_String
+
+/**
+ * @def set_ExtPack_I2C_partner_adr
+ * Alias to set the partner address of given I2C_Unit of ExtPack.
+ *
+ * This macro invokes `set_ExtPack_SPI_slave` to transmit the data.
+ */
+#define set_ExtPack_I2C_partner_adr set_ExtPack_SPI_slave
+
+/**
+ * @def get_ExtPack_data_I2C_last_received_data
+ *
+ * Alias to retrieve the last received I2C data byte of the given ExtPack I2C unit.
+ *
+ * This macro invokes `get_ExtPack_data_gpio_in` to get the data.
+ */
+#define get_ExtPack_data_I2C_last_received_data get_ExtPack_data_gpio_in
 
 #endif //LIB_UART_EXTENSION_PACK_FOR_ATMEGA328P_UARTEXTPACK_H

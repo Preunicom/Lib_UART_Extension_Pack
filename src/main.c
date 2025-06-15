@@ -12,6 +12,7 @@
 #define unit_U04_GPIO unit_U04
 #define unit_U05_TIME unit_U05
 #define unit_U06_SPI unit_U06
+#define unit_U07_I2C unit_U07
 
 void unit_U00_custom_ISR(unit_t, uint8_t);
 void unit_U01_custom_ISR(unit_t, uint8_t);
@@ -20,6 +21,7 @@ void unit_U03_custom_ISR(unit_t, uint8_t);
 void unit_U04_custom_ISR(unit_t, uint8_t);
 void unit_U05_custom_ISR(unit_t, uint8_t);
 void unit_U06_custom_ISR(unit_t, uint8_t);
+void unit_U07_custom_ISR(unit_t, uint8_t);
 
 int main() {
     // Initialize the UART Extension Pack
@@ -28,6 +30,7 @@ int main() {
     init_ExtPack_Unit(unit_U04_GPIO, GPIO_Unit, unit_U04_custom_ISR);
     init_ExtPack_Unit(unit_U05_TIME, Timer_Unit, unit_U05_custom_ISR);
     init_ExtPack_Unit(unit_U06_SPI, SPI_Unit, unit_U06_custom_ISR);
+    init_ExtPack_Unit(unit_U07_I2C, I2C_Unit, unit_U07_custom_ISR);
     /*
      * 50 KHz
      * 250 values are a good divider.
@@ -92,4 +95,9 @@ void unit_U06_custom_ISR(unit_t unit, uint8_t data) {
         // Got content
         ;
     }
+}
+
+void unit_U07_custom_ISR(unit_t unit, uint8_t data) {
+    // I2C message received
+    ;
 }

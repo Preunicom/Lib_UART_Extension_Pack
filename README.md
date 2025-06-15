@@ -110,6 +110,14 @@ They take the last sent slave id as the SPI Unit stores it for further messages.
 **WARNING:** If there is an error while sending the slave id (for example it does not reach the ExtPack or is invalid)
 it will be stored either. The slave id has to be set again.
 
+### I2C
+The I2C functions are similar to the SPI functions.  
+The last received byte is stored to be able to processed in the main program flow.
+To archive multiple bytes in one transaction without repeated start the bytes have to be sent with the same access mode (send/receive) 
+to the same partner address. Additionally, the following byte has to be sent while the one before is being transmitted by the ExtPack.
+With more than two bytes there has to be a more complex program logic. 
+You have to send the next byte repeatedly until you did not received an error because the ExtPack was not ready.
+
 ## Available functions
 
 - void __init_ExtPack__(void (*reset_ISR)(unit_t, char), void (*error_ISR)(unit_t, char))
@@ -175,3 +183,7 @@ it will be stored either. The slave id has to be set again.
 
 - EXT_PACK_SUCCESS
 - EXT_PACK_FAILURE
+
+
+# TODO
+Rework structure of README to logically support the Unit structure of ExtPack

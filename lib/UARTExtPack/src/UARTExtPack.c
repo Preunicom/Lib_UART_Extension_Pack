@@ -181,6 +181,9 @@ ext_pack_error_t UART_ExtPack_send(unit_t unit, uint8_t data) {
         } else if (units[unit].unit_type == SPI_Unit && (unit & (1<<ACC_MODE0))) {
             // Save sent SPI slave id
             unit_data[unit].output_values = data;
+        } else if (units[unit].unit_type == I2C_Unit && (unit & (1<<ACC_MODE0))) {
+            // Save sent I2C partner address
+            unit_data[unit].output_values = data;
         } else if (units[unit].unit_type == ACK_Unit) {
             // Save ACK state (active/not active)
             unit_data[unit].output_values &= (~(1<<ACK_STATE) | ((data>0)<<ACK_STATE));
@@ -247,12 +250,26 @@ ISR(USART_RX_vect) {
                     // Sets GPIO in values of unit after customISR call to be able to determine interrupted pin in customISR
                     unit_data[received_unit].input_values = received_data;
                     break;
-                case ACK_Unit:
+                case I2C_Unit:
+                    // Saves the last received byte of the I2C Unit to get it in main programm flow.
                     unit_data[received_unit].input_values = received_data;
-                    unit_data[received_unit].output_values |= (1<<ACK_EVENT);
+                    break;
+                case ACK_Unit:
+                    /*
+                     * Saves ACK data:
+                     *  input_values:
+                     *      Bit 0: ACK state (0: not enabled / 1: enabled)
+                     *      Bit 1-6: Unused
+                     *      Bit 7: ACK received event (0: not set / 1: set)
+                     *
+                     *  output_values:
+                     *      Bit 0-7: data of last received acknowledgment
+                     */
+                    unit_data[received_unit].input_values = received_data;
+                    unit_data[received_unit].output_values |= (1 << ACK_EVENT);
                     break;
             }
-            if(custom_ISR != NULL) {
+            if (custom_ISR != NULL) {
                 // Calls ISR of unit if set
                 custom_ISR(received_unit, received_data);
             }
@@ -382,6 +399,52 @@ ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id,
 uint8_t get_ExtPack_data_SPI_current_slave(unit_t unit) {
     return unit_data[unit].output_values;
 }
+
+// ------------------ I2C_Unit interface -------------------
+
+uint8_t get_ExtPack_data_I2C_current_slave(unit_t unit) {
+    return 0b01111111 & get_ExtPack_data_SPI_current_slave(unit);
+}
+
+ext_pack_error_t receive_ExtPack_I2C_data(unit_t unit) {
+    // Set access mode to 01
+    uint8_t unit_number = (1<<ACC_MODE0) | unit;
+    return send_ExtPack_UART_data(unit_number, 0x00);
+}
+
+ext_pack_error_t receive_ExtPack_I2C_data_from_partner(unit_t unit, uint8_t partner_adr) {
+    if(set_ExtPack_I2C_partner_adr(unit, partner_adr) == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
+    }
+    // Set access mode to 01
+    uint8_t unit_number = (1<<ACC_MODE0) | unit;
+    return send_ExtPack_UART_data(unit_number, 0x00);
+}
+
+ext_pack_error_t send_ExtPack_I2C_data_to_partner(unit_t unit, uint8_t partner_adr, uint8_t data) {
+    if(set_ExtPack_SPI_slave(unit, partner_adr) == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
+    }
+    return send_ExtPack_I2C_data(unit, data);
+}
+
+ext_pack_error_t send_ExtPack_I2C_String_to_partner(unit_t unit, uint8_t partner_adr, const uint8_t* data, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
+    int index = 0;
+    ext_pack_error_t error;
+    error = SEND_MAX_ATTEMPTS(set_ExtPack_I2C_partner_adr(unit, partner_adr), max_attempts, retry_delay_us);
+    if(error == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
+    }
+    while (data[index] != '\0') {
+        error = SEND_MAX_ATTEMPTS(send_ExtPack_I2C_data(unit, data[index++]), max_attempts, retry_delay_us);
+        if(error == EXT_PACK_FAILURE) {
+            return EXT_PACK_FAILURE;
+        }
+        delay_us(send_delay_us);
+    }
+    return EXT_PACK_SUCCESS;
+}
+
 
 // ------------------ GPIO_Unit interface ------------------
 
