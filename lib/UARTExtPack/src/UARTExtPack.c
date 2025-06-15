@@ -18,13 +18,13 @@
  * @def ACC_MODE0
  * Defines bit 6 of the unit_number package to represent access mode 0.
  */
-#define ACC_MODE0 6
+#define ACC_MODE0_BIT 6
 
 /**
- * @def ACC_MODE1
+ * @def ACC_MODE1_BIT
  * Defines bit 7 of the unit_number package to represent access mode 1.
  */
-#define ACC_MODE1 7
+#define ACC_MODE1_BIT 7
 
 /**
  * @struct unit
@@ -112,7 +112,7 @@ void delay_ms(unsigned int __ms) {
     }
 }
 
-// ---------------------------------------- Initialisation ----------------------------------------
+// ------------------------------------ Initialisation -------------------------------------
 
 void init_ExtPack(void (*reset_ISR)(unit_t, uint8_t), void (*error_ISR)(unit_t, uint8_t), void (*ack_ISR)(unit_t, uint8_t)) {
     /*
@@ -161,7 +161,7 @@ void set_ExtPack_custom_ISR(unit_t unit, void (*new_custom_ISR)(unit_t, uint8_t)
  * Send the data to ExtPack via UART.
  * Returns 0 if successfully, 1 otherwise.
  */
-ext_pack_error_t UART_ExtPack_send(unit_t unit, uint8_t data) {
+ext_pack_error_t send_to_ExtPack(unit_t unit, uint8_t data) {
     cli(); // Enter critical zone
     // Send data if:
     // - UART data register is empty
@@ -175,13 +175,13 @@ ext_pack_error_t UART_ExtPack_send(unit_t unit, uint8_t data) {
         // UART data register empty, no data in queue to be sent and unit number valid
         UDR0 = unit;
         next_data_to_send = data;
-        if(units[unit].unit_type == GPIO_Unit && !(unit & (1<<ACC_MODE0))) {
+        if(units[unit].unit_type == GPIO_Unit && !(unit & (1<<ACC_MODE0_BIT))) {
             // Save sent GPIO Outputs
             unit_data[unit].output_values = data;
-        } else if (units[unit].unit_type == SPI_Unit && (unit & (1<<ACC_MODE0))) {
+        } else if (units[unit].unit_type == SPI_Unit && (unit & (1<<ACC_MODE0_BIT))) {
             // Save sent SPI slave id
             unit_data[unit].output_values = data;
-        } else if (units[unit].unit_type == I2C_Unit && (unit & (1<<ACC_MODE0))) {
+        } else if (units[unit].unit_type == I2C_Unit && (unit & (1<<ACC_MODE0_BIT))) {
             // Save sent I2C partner address
             unit_data[unit].output_values = data;
         } else if (units[unit].unit_type == ACK_Unit) {
@@ -209,7 +209,7 @@ ISR(USART_UDRE_vect) {
     UCSR0B &= ~(1<<UDRIE0);
 }
 
-// ---------------------------------------- Receiving ----------------------------------------
+// --------------------------------------- Receiving ---------------------------------------
 
 /*
  * Receives data from ExtPack via UART and triggers custom ISRs of Units.
@@ -221,7 +221,7 @@ ISR(USART_RX_vect) {
     if(recv_state == RECV_UNIT_NEXT_STATE) {
         // Received unit number
         received_unit = received_data;
-        if((errors & ((1<<FE0)|(1<<UPE0))) || (received_unit & (1<<ACC_MODE1)) || (received_unit & (1<<ACC_MODE0))) {
+        if((errors & ((1<<FE0)|(1<<UPE0))) || (received_unit & (1<<ACC_MODE1_BIT)) || (received_unit & (1<<ACC_MODE0_BIT))) {
             // Frame or Parity error OR an access_mode bit is set
             recv_state = RECV_INVALID_UNIT;
         } else {
@@ -246,12 +246,8 @@ ISR(USART_RX_vect) {
             switch (units[received_unit].unit_type) {
                 case UNDEFINED:
                     return; // Ends receive because no unit type is chosen
-                case GPIO_Unit:
-                    // Sets GPIO in values of unit after customISR call to be able to determine interrupted pin in customISR
-                    unit_data[received_unit].input_values = received_data;
-                    break;
-                case I2C_Unit:
-                    // Saves the last received byte of the I2C Unit to get it in main programm flow.
+                case GPIO_Unit || I2C_Unit:
+                    // Saves the last received values of the unit to be able to get it in the main program flow.
                     unit_data[received_unit].input_values = received_data;
                     break;
                 case ACK_Unit:
@@ -292,19 +288,34 @@ ISR(TIMER0_OVF_vect) {
     TIMSK0 &= ~(1 << TOIE0);
 }
 
-// ---------------------------------------- Interface ----------------------------------------
+// --------------------------------------- Interface ---------------------------------------
+
+// ------------------ Universal interface ------------------
+
+uint8_t get_ExtPack_stored_unit_output_values(unit_t unit) {
+    return unit_data[unit].output_values;
+}
+
+uint8_t get_ExtPack_stored_unit_input_values(unit_t unit) {
+    return unit_data[unit].output_values;
+}
+
+ext_pack_error_t send_String_to_ExtPack(unit_t unit, const uint8_t* data, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
+    int index = 0;
+    ext_pack_error_t error;
+    while (data[index] != '\0') {
+        error = SEND_MAX_ATTEMPTS(send_to_ExtPack(unit, data[index++]), max_attempts, retry_delay_us);
+        if(error == EXT_PACK_FAILURE) {
+            return EXT_PACK_FAILURE;
+        }
+        delay_us(send_delay_us);
+    }
+    return EXT_PACK_SUCCESS;
+}
 
 // ------------------ RST_Unit interface -------------------
 
-ext_pack_error_t reset_ExtPack() {
-    return UART_ExtPack_send(unit_U00, 0xFF);
-}
-
 // ------------------ ACK_Unit interface -------------------
-
-uint8_t get_ExtPack_ack_state() {
-    return unit_data[unit_U02].output_values & (1<<ACK_STATE);
-}
 
 void clear_ExtPack_ack_event() {
     unit_data[unit_U02].output_values &= ~(1<<ACK_EVENT);
@@ -351,26 +362,7 @@ ext_pack_error_t wait_for_ExtPack_ACK(uint16_t timeout_us) {
 
 // ------------------ UART_Unit interface ------------------
 
-ext_pack_error_t send_ExtPack_UART_String(unit_t unit, const uint8_t* data, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
-    int index = 0;
-    ext_pack_error_t error;
-    while (data[index] != '\0') {
-        error = SEND_MAX_ATTEMPTS(send_ExtPack_UART_data(unit, data[index++]), max_attempts, retry_delay_us);
-        if(error == EXT_PACK_FAILURE) {
-            return EXT_PACK_FAILURE;
-        }
-        delay_us(send_delay_us);
-    }
-    return EXT_PACK_SUCCESS;
-}
-
 // ------------------ SPI_Unit interface -------------------
-
-ext_pack_error_t set_ExtPack_SPI_slave(unit_t unit, uint8_t slave_id) {
-    // Set access_mode to "01"
-    uint8_t unit_number = (1<<ACC_MODE0) | unit;
-    return send_ExtPack_SPI_data(unit_number, slave_id);
-}
 
 ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, uint8_t data) {
     if(set_ExtPack_SPI_slave(unit, slave_id) == EXT_PACK_FAILURE) {
@@ -380,120 +372,53 @@ ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, u
 }
 
 ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id, const uint8_t* data, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
-    int index = 0;
     ext_pack_error_t error;
     error = SEND_MAX_ATTEMPTS(set_ExtPack_SPI_slave(unit, slave_id), max_attempts, retry_delay_us);
     if(error == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;
     }
-    while (data[index] != '\0') {
-        error = SEND_MAX_ATTEMPTS(send_ExtPack_SPI_data(unit, data[index++]), max_attempts, retry_delay_us);
-        if(error == EXT_PACK_FAILURE) {
-            return EXT_PACK_FAILURE;
-        }
-        delay_us(send_delay_us);
+    error = send_String_to_ExtPack(unit, data, send_delay_us, max_attempts, retry_delay_us);
+    if(error == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
     }
     return EXT_PACK_SUCCESS;
 }
 
-uint8_t get_ExtPack_data_SPI_current_slave(unit_t unit) {
-    return unit_data[unit].output_values;
-}
-
 // ------------------ I2C_Unit interface -------------------
-
-uint8_t get_ExtPack_data_I2C_current_slave(unit_t unit) {
-    return 0b01111111 & get_ExtPack_data_SPI_current_slave(unit);
-}
-
-ext_pack_error_t receive_ExtPack_I2C_data(unit_t unit) {
-    // Set access mode to 01
-    uint8_t unit_number = (1<<ACC_MODE0) | unit;
-    return send_ExtPack_UART_data(unit_number, 0x00);
-}
 
 ext_pack_error_t receive_ExtPack_I2C_data_from_partner(unit_t unit, uint8_t partner_adr) {
     if(set_ExtPack_I2C_partner_adr(unit, partner_adr) == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;
     }
-    // Set access mode to 01
-    uint8_t unit_number = (1<<ACC_MODE0) | unit;
-    return send_ExtPack_UART_data(unit_number, 0x00);
+    return receive_ExtPack_I2C_data(unit);
 }
 
 ext_pack_error_t send_ExtPack_I2C_data_to_partner(unit_t unit, uint8_t partner_adr, uint8_t data) {
-    if(set_ExtPack_SPI_slave(unit, partner_adr) == EXT_PACK_FAILURE) {
+    if(set_ExtPack_I2C_partner_adr(unit, partner_adr) == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;
     }
     return send_ExtPack_I2C_data(unit, data);
 }
 
 ext_pack_error_t send_ExtPack_I2C_String_to_partner(unit_t unit, uint8_t partner_adr, const uint8_t* data, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
-    int index = 0;
     ext_pack_error_t error;
     error = SEND_MAX_ATTEMPTS(set_ExtPack_I2C_partner_adr(unit, partner_adr), max_attempts, retry_delay_us);
     if(error == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;
     }
-    while (data[index] != '\0') {
-        error = SEND_MAX_ATTEMPTS(send_ExtPack_I2C_data(unit, data[index++]), max_attempts, retry_delay_us);
-        if(error == EXT_PACK_FAILURE) {
-            return EXT_PACK_FAILURE;
-        }
-        delay_us(send_delay_us);
+    error = send_String_to_ExtPack(unit, data, send_delay_us, max_attempts, retry_delay_us);
+    if(error == EXT_PACK_FAILURE) {
+        return EXT_PACK_FAILURE;
     }
     return EXT_PACK_SUCCESS;
 }
 
-
 // ------------------ GPIO_Unit interface ------------------
-
-ext_pack_error_t refresh_ExtPack_gpio_data(unit_t unit) {
-    // Set access_mode to "01"
-    uint8_t unit_number = (1<<ACC_MODE0) | unit;
-    return UART_ExtPack_send(unit_number, 0x00);
-}
-
-uint8_t get_ExtPack_data_gpio_in(unit_t unit) {
-    return unit_data[unit].input_values;
-}
-
-uint8_t get_ExtPack_data_gpio_out(unit_t unit) {
-    return unit_data[unit].output_values;
-}
 
 // -------------------- Timer interface --------------------
 
-ext_pack_error_t set_ExtPack_timer_enable(unit_t unit, uint8_t enable) {
-    // Set access_mode to "00"
-    uint8_t unit_number = ~((1<<ACC_MODE1) | (1<<ACC_MODE0)) & unit;
-    return UART_ExtPack_send(unit_number, enable);
-}
-
-ext_pack_error_t restart_ExtPack_timer(unit_t unit) {
-    // Set access_mode to "01"
-    uint8_t unit_number = ~(1<<ACC_MODE1) & ((1<<ACC_MODE0) | unit);
-    return UART_ExtPack_send(unit_number, 0x00);
-}
-
-ext_pack_error_t set_ExtPack_timer_prescaler(unit_t unit, uint8_t prescaler_divisor) {
-    // Set access_mode to "10"
-    uint8_t unit_number = ~(1<<ACC_MODE0) & ((1<<ACC_MODE1) | unit);
-    return UART_ExtPack_send(unit_number, prescaler_divisor);
-}
-
-ext_pack_error_t set_ExtPack_timer_start_value(unit_t unit, uint8_t start_value) {
-    // Set access_mode to "11"
-    uint8_t unit_number = (1<<ACC_MODE1) | (1<<ACC_MODE0) | unit;
-    return UART_ExtPack_send(unit_number, start_value);
-}
-
 ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor, uint8_t start_value, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us) {
-    ext_pack_error_t error =  SEND_MAX_ATTEMPTS(set_ExtPack_timer_enable(unit, 0), max_attempts, retry_delay_us);
-    if(error == EXT_PACK_FAILURE) {
-        return EXT_PACK_FAILURE;
-    }
-    delay_us(send_delay_us);
+    ext_pack_error_t error;
     error = SEND_MAX_ATTEMPTS(set_ExtPack_timer_enable(unit, 0), max_attempts, retry_delay_us);
     if(error == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;
