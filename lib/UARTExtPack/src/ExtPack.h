@@ -221,6 +221,7 @@ uint8_t get_ExtPack_ack_event();
 /**
  * Blocks until an acknowledgment of the ACK unit (unit_U02) of ExtPack gets received or the timeout is over.
  * Also checks ACK data.
+ * Resets ACK event to not set.
  *
  * @param data The data the acknowledgement is expected to be.
  * @param timeout_us Maximum time awaited in us until the function returns an error.
@@ -400,7 +401,7 @@ ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id,
  *
  * This macro invokes 'send_to_ExtPack' with 01 as access mode to send the data.
  */
-#define receive_ExtPack_I2C_data(unit) send_to_ExtPack(set_ExtPack_access_mode(unit, 01), 0x00)
+#define receive_ExtPack_I2C_data(unit) send_to_ExtPack(set_ExtPack_access_mode(unit, 10), 0x00)
 
 /**
  * Request a byte from given partner and set the partner in the I2C_Unit of ExtPack.
