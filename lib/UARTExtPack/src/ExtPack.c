@@ -1,7 +1,13 @@
-#include "UARTExtPack.h"
-#include <stddef.h>
-#include <avr/io.h>
-#include "avr/interrupt.h"
+#include "ExtPack.h"
+#include <util/delay.h>
+
+#define NULL (void*)0
+
+#if defined(__AVR_ATmega328P__)
+    #include "ExtPack_LL_M328P.h"
+#else
+    #error Unsupported microcontroller!
+#endif
 
 // -------------------------- Unit data - definition & declaration --------------------------
 
@@ -80,41 +86,6 @@ struct unit_data_storage {
  */
 struct unit_data_storage unit_data[USED_UNITS] = {0};
 
-// ------------------- UART communication - data definition & declaration -------------------
-
-#define BAUD_RATE 1000000
-#define BAUD_CONST (((F_CPU/(BAUD_RATE*16UL)))-1)
-
-/**
- * @def state_type
- * @brief Type alias for the UART receive state machine state.
- */
-#define state_type uint8_t
-
-/**
- * @def RECV_UNIT_NEXT_STATE
- * @brief UART receive state where a unit identifier byte is expected next.
- */
-#define RECV_UNIT_NEXT_STATE 0
-
-/**
- * @def RECV_DATA_NEXT_STATE
- * @brief UART receive state where the data byte is expected next.
- */
-#define RECV_DATA_NEXT_STATE 1
-
-/**
- * @def RECV_INVALID_UNIT
- * @brief UART receive state indicating an invalid unit identifier was received.
- */
-#define RECV_INVALID_UNIT 2
-
-state_type recv_state = RECV_UNIT_NEXT_STATE;
-
-uint8_t next_data_to_send;
-
-unit_t received_unit;
-
 // -------------------------------------  Auxiliary functions -------------------------------------
 
 void delay_us(unsigned int __us) {
@@ -131,36 +102,22 @@ void delay_ms(unsigned int __ms) {
 
 // ------------------------------------ Initialisation -------------------------------------
 
+/**
+ * This function processes the received data from the Low Level (LL) library of ExtPack.
+ * The data is being checked for correct unit format and unit number.
+ *
+ * @note This function has to be handed to the LL library via function pointer when initializing ExtPack.
+ *
+ * @param unit Received unit.
+ * @param data Received data.
+ */
+void process_received_ExtPack_data(unit_t unit, uint8_t data);
+
 void init_ExtPack(void (*reset_ISR)(unit_t, uint8_t), void (*error_ISR)(unit_t, uint8_t), void (*ack_ISR)(unit_t, uint8_t)) {
-    /*
-     * ---------- Init UART ----------
-     * UART packages: 8N1 with 1 MBAUD
-     */
-    //Set BAUD rate
-    UBRR0H = (BAUD_CONST >> 8);
-    UBRR0L = BAUD_CONST;
-    //Set RX and TX to enabled and enable interrupt RX Complete
-    UCSR0B |= (1<<RXEN0)|(1<<TXEN0)|(1<<RXCIE0);
-    //Set 8-bit data
-    UCSR0C |= (1<<UCSZ01)|(1<<UCSZ00);
-    /*
-     * ---------- Init Timer ----------
-     * /8 prescaler --> 16 MHz / 8 = 2 MHz
-     * --> Every UART bit is 2 clock cycles
-     *  --> 2 UART messages with 8N1 are 10 bit each --> 20 bits
-     *   --> At least 40 clock cycles
-     * --> start_value = 190 (--> 66 clock cycles (40 + 26 buffer)
-     */
-    // Normal mode is default --> No change needed
-    // No compares used --> No change needed
-    // Set prescaler to /8
-    TCCR0B &= ~((1 << CS02) | (1 << CS01) | (1 << CS00));
-    TCCR0B |= ( 1 << CS01);
-    // Enable global interrupt
-    sei();
-    init_ExtPack_Unit(unit_U00, Reset_Unit, reset_ISR);
-    init_ExtPack_Unit(unit_U01, Error_Unit, error_ISR);
-    init_ExtPack_Unit(unit_U02, ACK_Unit, ack_ISR);
+    init_ExtPack_Unit(unit_U00, EXTPACK_RESET_UNIT, reset_ISR);
+    init_ExtPack_Unit(unit_U01, EXTPACK_ERROR_UNIT, error_ISR);
+    init_ExtPack_Unit(unit_U02, EXTPACK_ACK_UNIT, ack_ISR);
+    init_ExtPack_LL(process_received_ExtPack_data);
 }
 
 void init_ExtPack_Unit(unit_t unit, unit_type_t unit_type, void (*custom_ISR)(unit_t, uint8_t)) {
@@ -179,131 +136,66 @@ void set_ExtPack_custom_ISR(unit_t unit, void (*new_custom_ISR)(unit_t, uint8_t)
  * Returns 0 if successfully, 1 otherwise.
  */
 ext_pack_error_t send_to_ExtPack(unit_t unit, uint8_t data) {
-    cli(); // Enter critical zone
-    // Send data if:
-    // - UART data register is empty
-    // - Data register empty interrupt is not active (so no data is in queue to be sent)
-    // - unit number is declared as used
-    if(
-       (UCSR0A & (1<<UDRE0)) // Check if data register empty is set --> UART buffer empty
-       && (~(UCSR0B) & (1<<UDRIE0)) // Check if data register empty interrupts are enabled --> buffer is reserved for following unit data
-       && ((unit & 0b00111111) < USED_UNITS) // check if unit number is used
-       ) {
-        // UART data register empty, no data in queue to be sent and unit number valid
-        UDR0 = unit;
-        next_data_to_send = data;
-        if(units[unit].unit_type == GPIO_Unit && !(unit & (1<<ACC_MODE0_BIT))) {
-            // Save sent GPIO Outputs
-            unit_data[unit].output_values = data;
-        } else if (units[unit].unit_type == SPI_Unit && (unit & (1<<ACC_MODE0_BIT))) {
-            // Save sent SPI slave id
-            unit_data[unit].output_values = data;
-        } else if (units[unit].unit_type == I2C_Unit && (unit & (1<<ACC_MODE0_BIT))) {
-            // Save sent I2C partner address
-            unit_data[unit].output_values = data;
-        } else if (units[unit].unit_type == ACK_Unit) {
-            // Save ACK state (active/not active)
-            unit_data[unit].output_values &= (~(1<<ACK_STATE) | ((data>0)<<ACK_STATE));
+    if ((unit & 0b00111111) < USED_UNITS) {
+        // check if unit number is in used units range
+        if (_send_UART_ExtPack_message(unit, data) == EXT_PACK_SUCCESS) {
+            if(units[unit].unit_type == EXTPACK_GPIO_UNIT && !(unit & (1<<ACC_MODE0_BIT))) {
+                // Save sent GPIO Outputs
+                unit_data[unit].output_values = data;
+            } else if (units[unit].unit_type == EXTPACK_SPI_UNIT && (unit & (1<<ACC_MODE0_BIT))) {
+                // Save sent SPI slave id
+                unit_data[unit].output_values = data;
+            } else if (units[unit].unit_type == EXTPACK_I2C_UNIT && (unit & (1<<ACC_MODE0_BIT))) {
+                // Save sent I2C partner address
+                unit_data[unit].output_values = data;
+            } else if (units[unit].unit_type == EXTPACK_ACK_UNIT) {
+                // Save ACK state (active/not active)
+                unit_data[unit].output_values &= (~(1<<ACK_STATE) | ((data>0)<<ACK_STATE));
+            }
+            return EXT_PACK_SUCCESS;
         }
-        // Activate data register empty interrupt
-        UCSR0B |= (1<<UDRIE0);
-        sei(); // Exit critical zone
-        return EXT_PACK_SUCCESS;
-    } else {
-        // Not ready to send data pair
-        sei(); // Exit critical zone
-        return EXT_PACK_FAILURE;
+        // Sending failed
     }
-}
-
-/*
- * Sends second part of data pair
- */
-ISR(USART_UDRE_vect) {
-    // UART data register empty
-    UDR0 = next_data_to_send;
-    // Deactivate data register empty interrupt
-    UCSR0B &= ~(1<<UDRIE0);
+    // Sending failed or unit not in range of used units
+    return EXT_PACK_FAILURE;
 }
 
 // --------------------------------------- Receiving ---------------------------------------
 
-/*
- * Receives data from ExtPack via UART and triggers custom ISRs of Units.
- * Also manages received data for units.
- */
-ISR(USART_RX_vect) {
-    uint8_t errors = UCSR0A;
-    uint8_t received_data = UDR0;
-    if(recv_state == RECV_UNIT_NEXT_STATE) {
-        // Received unit number
-        received_unit = received_data;
-        if((errors & ((1<<FE0)|(1<<UPE0))) || (received_unit & (1<<ACC_MODE1_BIT)) || (received_unit & (1<<ACC_MODE0_BIT))) {
-            // Frame or Parity error OR an access_mode bit is set
-            recv_state = RECV_INVALID_UNIT;
-        } else {
-            // No error
-            recv_state = RECV_DATA_NEXT_STATE;
+void process_received_ExtPack_data(unit_t unit, uint8_t data) {
+    if(unit <= USED_UNITS
+        && !(unit & (1<<ACC_MODE1_BIT))
+        && !(unit & (1<<ACC_MODE0_BIT))) {
+        // Valid unit and no access mode bit set
+        void (*custom_ISR)(unit_t, uint8_t) = units[unit].custom_ISR;
+        switch (units[unit].unit_type) {
+            case EXTPACK_UNDEFINED:
+                return; // Ends receive because no unit type is chosen
+            case EXTPACK_GPIO_UNIT:
+            case EXTPACK_I2C_UNIT:
+                // Saves the last received values of the unit to be able to get it in the main program flow.
+                unit_data[unit].input_values = data;
+                break;
+            case EXTPACK_ACK_UNIT:
+                /*
+                 * Saves ACK data:
+                 *  output_values:
+                 *      Bit 0: ACK state (0: not enabled / 1: enabled)
+                 *      Bit 1-6: Unused
+                 *      Bit 7: ACK received event (0: not set / 1: set)
+                 *
+                 *  input_values:
+                 *      Bit 0-7: data of last received acknowledgment
+                 */
+                unit_data[unit].input_values = data;
+                unit_data[unit].output_values |= (1 << ACK_EVENT);
+                break;
         }
-        // Enables reset state machine timer
-        TIFR0 |= (1 << TOV0);
-        TCNT0 = 190;
-        TIMSK0 |= (1 << TOIE0);
-    } else if(recv_state == RECV_DATA_NEXT_STATE) {
-        // Received unit data
-        // Disables state machine reset timer
-        TIMSK0 &= ~(1 << TOIE0);
-        recv_state = RECV_UNIT_NEXT_STATE;
-        if((errors & ((1<<FE0)|(1<<UPE0))) || received_unit >= USED_UNITS){
-            // Frame or Parity Error or unit not in range of used units
-            ;
-        } else {
-            // No error
-            void (*custom_ISR)(unit_t, uint8_t) = units[received_unit].custom_ISR;
-            switch (units[received_unit].unit_type) {
-                case UNDEFINED:
-                    return; // Ends receive because no unit type is chosen
-                case GPIO_Unit:
-                case I2C_Unit:
-                    // Saves the last received values of the unit to be able to get it in the main program flow.
-                    unit_data[received_unit].input_values = received_data;
-                    break;
-                case ACK_Unit:
-                    /*
-                     * Saves ACK data:
-                     *  output_values:
-                     *      Bit 0: ACK state (0: not enabled / 1: enabled)
-                     *      Bit 1-6: Unused
-                     *      Bit 7: ACK received event (0: not set / 1: set)
-                     *
-                     *  input_values:
-                     *      Bit 0-7: data of last received acknowledgment
-                     */
-                    unit_data[received_unit].input_values = received_data;
-                    unit_data[received_unit].output_values |= (1 << ACK_EVENT);
-                    break;
-            }
-            if (custom_ISR != NULL) {
-                // Calls ISR of unit if set
-                custom_ISR(received_unit, received_data);
-            }
+        if (custom_ISR != NULL) {
+            // Calls ISR of unit if set
+            custom_ISR(unit, data);
         }
-    } else if(recv_state == RECV_INVALID_UNIT) {
-        // Received unit had an error --> ignore unit data
-        recv_state = RECV_UNIT_NEXT_STATE;
-        // Disables state machine reset timer
-        TIMSK0 &= ~(1 << TOIE0);
     }
-}
-
-/*
- * Resets state machine when timer/counter0 has an overflow
- */
-ISR(TIMER0_OVF_vect) {
-    //Reset state machine
-    recv_state = RECV_UNIT_NEXT_STATE;
-    // Disables timer interrupts
-    TIMSK0 &= ~(1 << TOIE0);
 }
 
 // --------------------------------------- Interface ---------------------------------------
@@ -340,11 +232,10 @@ void clear_ExtPack_ack_event() {
 }
 
 uint8_t get_ExtPack_ack_event() {
-    uint8_t SREG_temp = SREG;
-    cli(); // Enter critical zone
+    enter_critical_zone();
     uint8_t event = unit_data[unit_U02].output_values & (1<<ACK_EVENT);
     unit_data[unit_U02].output_values &= ~(1<<ACK_EVENT); // Reset ACK event
-    SREG = SREG_temp; // exit critical zone
+    exit_critical_zone();
     return (event > 0);
 }
 

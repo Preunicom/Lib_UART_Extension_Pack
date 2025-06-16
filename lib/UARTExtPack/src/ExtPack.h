@@ -1,140 +1,29 @@
 /**
- * @file UARTExtPack.h
+ * @file ExtPack.h
  *
- * @brief Header file for the UART Extension Pack library for the ATmega328P.
+ * @brief Header file for the Extension Pack library.
  *
  * This file provides function prototypes, macros, and definitions for interfacing
- * with the ExtPack system over UART. The library enables communication with
+ * with the ExtPack system. The library prepares communication for
  * various unit types, including GPIO, UART, Timer, SPI and I2C units.
  *
  * ## Features:
  * - Initialization functions for the ExtPack system and individual units.
- * - UART communication functions for sending and receiving data.
  * - GPIO interface for retrieving input and output states.
  * - Timer control functions, including enabling, restarting, and configuring timers.
  * - SPI interface functions for managing SPI communication (setting slave, sending/receiving data).
  * - I2C interface functions for managing I2C communication (setting partner, sending/receiving data).
  * - Macro-based aliases for simplified function calls.
  *
- * ## Internal Hardware Components Used:
- * - **USART0** (TX: PD1, RX: PD0)
- * - **Timer/Counter0**
- *
  * @author Markus Remy
  * @date 15.06.2025
  */
 
-#ifndef LIB_UART_EXTENSION_PACK_FOR_ATMEGA328P_UARTEXTPACK_H
-#define LIB_UART_EXTENSION_PACK_FOR_ATMEGA328P_UARTEXTPACK_H
+#ifndef EXTPACK_H
+#define EXTPACK_H
 
 #include <stdint.h>
-#include <util/delay.h>
-
-// --------------------------------------- Definition of Units ---------------------------------------
-
-#include "UARTExtPack_UnitDefs.h"  // Include the header file for unit definitions
-
-/**
- * @typedef unit_t
- * Type alias for unit identifier.
- *
- * @details 'unit_t' is defined as uint8_t and is used to represent the unique identifiers
- * for various units within the system. It is passed to functions that require a specific unit
- * identifier for communication or management.
- */
-typedef uint8_t unit_t;
-
-// ------------------------------------- Definitions of Unit Types -------------------------------------
-
-/**
- * @typedef unit_type_t
- * Type alias for unit type identifier.
- *
- * @details 'unit_type_t' is defined as uint8_t and is used to represent different types of units,
- * such as GPIO, UART, and Timer. It helps categorize units within the system and is passed to
- * functions that require the identification of unit types.
- */
-typedef uint8_t unit_type_t;
-
-/**
- * @def UNDEFINED
- * @brief Constant value representing an undefined unit type.
- */
-#define UNDEFINED 0
-
-/**
- * @def Reset_Unit
- * @brief Constant value representing the Reset unit type.
- */
-#define Reset_Unit 1
-
-/**
- * @def Error_Unit
- * @brief Constant value representing the Error unit type.
- */
-#define Error_Unit 2
-
-/**
- * @def ACK_Unit
- * @brief Constant value representing the Acknowledge unit type.
- */
-#define ACK_Unit 3
-
-/**
- * @def GPIO_Unit
- * @brief Constant value representing the GPIO (General Purpose Input/Output) unit type.
- */
-#define GPIO_Unit 4
-
-/**
- * @def UART_Unit
- * @brief Constant value representing the UART (Universal Asynchronous Receiver/Transmitter) unit type.
- */
-#define UART_Unit 5
-
-/**
- * @def Timer_Unit
- * @brief Constant value representing the Timer unit type.
- */
-#define Timer_Unit 6
-
-/**
- * @def SPI_Unit
- * @brief Constant value representing the SPI (Serial Peripheral Interface) unit type.
- */
-#define SPI_Unit 7
-
-/**
- * @def I2C_Unit
- * @brief Constant value representing the I2C/TWI (Inter-Integrated Circuit/Two Wire Interface) unit type.
- */
-#define I2C_Unit 8
-
-// ----------------------------------  Definition of special values ----------------------------------
-
-/**
- * @typedef ext_pack_error_t
- * Type alias for ExtPack errors.
- *
- * @details 'ext_pack_error_t' is defined as uint8_t and is used to represent ExtPack errors.
- */
-typedef uint8_t ext_pack_error_t;
-
-/**
- * @def EXT_PACK_SUCCESS
- * @brief Success value for ExtPack library functions.
- *
- * This value is returned by functions to indicate that the operation was successful.
- */
-#define EXT_PACK_SUCCESS 0
-
-/**
- * @def EXT_PACK_FAILURE
- * @brief Failure value for ExtPack library functions.
- *
- * This value is returned by functions when an error has occurred.
- */
-#define EXT_PACK_FAILURE 1
+#include "ExtPack_Defs.h"  // Include the header file for constants definitions
 
 // --------------------------------  Definition of auxiliary functions -------------------------------
 
@@ -679,4 +568,4 @@ ext_pack_error_t send_ExtPack_I2C_String_to_partner(unit_t unit, uint8_t partner
  */
 ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor, uint8_t start_value, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
 
-#endif //LIB_UART_EXTENSION_PACK_FOR_ATMEGA328P_UARTEXTPACK_H
+#endif //EXTPACK

@@ -1,7 +1,7 @@
 #include <stdlib.h>
-#include <avr/interrupt.h>
+#include <util/delay.h>
 
-#include "../lib/UARTExtPack/src/UARTExtPack.h"
+#include "../lib/UARTExtPack/src/ExtPack.h"
 
 #define USED_UNITS 3
 
@@ -26,11 +26,11 @@ void unit_U07_custom_ISR(unit_t, uint8_t);
 int main() {
     // Initialize the UART Extension Pack
     init_ExtPack(NULL, unit_U01_custom_ISR, unit_U02_custom_ISR);
-    init_ExtPack_Unit(unit_U03_UART, UART_Unit, unit_U03_custom_ISR);
-    init_ExtPack_Unit(unit_U04_GPIO, GPIO_Unit, unit_U04_custom_ISR);
-    init_ExtPack_Unit(unit_U05_TIME, Timer_Unit, unit_U05_custom_ISR);
-    init_ExtPack_Unit(unit_U06_SPI, SPI_Unit, unit_U06_custom_ISR);
-    init_ExtPack_Unit(unit_U07_I2C, I2C_Unit, unit_U07_custom_ISR);
+    init_ExtPack_Unit(unit_U03_UART, EXTPACK_UART_UNIT, unit_U03_custom_ISR);
+    init_ExtPack_Unit(unit_U04_GPIO, EXTPACK_GPIO_UNIT, unit_U04_custom_ISR);
+    init_ExtPack_Unit(unit_U05_TIME, EXTPACK_TIMER_UNIT, unit_U05_custom_ISR);
+    init_ExtPack_Unit(unit_U06_SPI, EXTPACK_SPI_UNIT, unit_U06_custom_ISR);
+    init_ExtPack_Unit(unit_U07_I2C, EXTPACK_I2C_UNIT, unit_U07_custom_ISR);
     /*
      * 50 KHz
      * 250 values are a good divider.
@@ -81,6 +81,7 @@ void unit_U04_custom_ISR(unit_t unit, uint8_t data) {
         uint8_t string[13] = "Hello World!\n";
         send_ExtPack_UART_String(unit_U03_UART, string, 1000, 10, 1000);
         send_ExtPack_SPI_String(unit_U06_SPI, string, 1000, 10, 1000);
+        send_ExtPack_I2C_String(unit_U07_I2C, string, 1000, 10, 1000);
     }
 }
 

@@ -235,13 +235,14 @@ Some functions like __send_ExtPack_UART_String()__ use SEND_MAX_ATTEMPTS and tak
 
 ### unit_type_t
 
-- Reset_Unit
-- Error_Unit
-- GPIO_Unit
-- UART_Unit
-- Timer_Unit
-- SPI_Unit
-- I2C_Unit
+- EXTPACK_RESET_UNIT
+- EXTPACK_ERROR_UNIT
+- EXTPACK_ACK_UNIT
+- EXTPACK_GPIO_UNIT
+- EXTPACK_UART_UNIT
+- EXTPACK_TIMER_UNIT
+- EXTPACK_SPI_UNIT
+- EXTPACK_I2C_UNIT
 
 ### ext_pack_error_t
 
