@@ -1,9 +1,15 @@
 #include <stdlib.h>
 #include <util/delay.h>
 
-#include "../lib/UARTExtPack/src/ExtPack.h"
-
-#define USED_UNITS 3
+#include "ExtPack_U_Reset.h"
+#include "ExtPack_U_Error.h"
+#include "ExtPack_U_Acknowledge.h"
+#include "ExtPack_U_GPIO.h"
+#include "ExtPack_U_I2C.h"
+#include "ExtPack_U_SPI.h"
+#include "ExtPack_U_UART.h"
+#include "ExtPack_U_Timer.h"
+#include "ExtPack.h"
 
 #define unit_U00_RST unit_U00
 #define unit_U01_ERR unit_U01
@@ -85,9 +91,24 @@ void unit_U04_custom_ISR(unit_t unit, uint8_t data) {
     }
 }
 
+uint8_t i2c_counter = 0;
+
 void unit_U05_custom_ISR(unit_t unit, uint8_t data) {
     // Timer interrupt received
-    SEND_MAX_ATTEMPTS(set_ExtPack_gpio_out(unit_U04_GPIO, get_ExtPack_data_gpio_out(unit_U04_GPIO) ^ 0b10), 10, 1000);
+    clear_ExtPack_ack_event();
+    do {
+        set_ExtPack_I2C_partner_adr(unit_U07_I2C, 0x68);
+    } while (wait_for_ExtPack_ACK_data(0x68, 100) != EXT_PACK_SUCCESS);
+    do {
+        send_ExtPack_I2C_data(unit_U07_I2C, 0x03);
+    } while (wait_for_ExtPack_ACK_data(0x03, 100) != EXT_PACK_SUCCESS);
+    do {
+        receive_ExtPack_I2C_data(unit_U07_I2C);
+    } while (wait_for_ExtPack_ACK_data(0x00, 100) != EXT_PACK_SUCCESS);
+    delay_us(100);
+    uint8_t string[13] = "Hello World!\n";
+    send_ExtPack_I2C_String(unit_U07_I2C, string, 1000, 10, 1000);
+    //SEND_MAX_ATTEMPTS(set_ExtPack_gpio_out(unit_U04_GPIO, get_ExtPack_data_gpio_out(unit_U04_GPIO) ^ 0b10), 10, 1000);
 }
 
 void unit_U06_custom_ISR(unit_t unit, uint8_t data) {
@@ -100,5 +121,5 @@ void unit_U06_custom_ISR(unit_t unit, uint8_t data) {
 
 void unit_U07_custom_ISR(unit_t unit, uint8_t data) {
     // I2C message received
-    ;
+    i2c_counter++;
 }

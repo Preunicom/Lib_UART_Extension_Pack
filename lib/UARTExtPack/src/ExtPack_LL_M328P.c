@@ -37,7 +37,7 @@ unit_t received_unit;
 
 void (*ExtPack_receive_callback)(unit_t, uint8_t);
 
-void init_ExtPack_LL(void (*receive_callback)(unit_t, uint8_t)) {
+void _init_ExtPack_LL(void (*receive_callback)(unit_t, uint8_t)) {
     ExtPack_receive_callback = receive_callback;
     /*
      * ---------- Init UART ----------

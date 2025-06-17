@@ -42,6 +42,10 @@ This library supports Reset_Unit, Error_Unit, ACK_Unit, UART_Unit, GPIO_Uni, Tim
    - unit type (__UART_Unit__, __GPIO_Unit__ or __Timer_Unit__) and
    - your custom ISR (of type __void (*func)(unit_t, char)__)
 
+**NOTE:** You are able to define your amount of used units used by the ExtPack to minimize memory usage by adding the compiler flag:
+`-DUSED_UNITS=<Amount>`
+
+
 ### Reset_Unit
 
 #### reset_ExtPack()

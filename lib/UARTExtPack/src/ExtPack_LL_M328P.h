@@ -36,7 +36,7 @@ uint8_t ExtPack_LL_SREG_save;
  *
  * @param receive_callback Callback to be called when data from the ExtPack was received via UART.
  */
-void init_ExtPack_LL(void (*receive_callback)(unit_t, uint8_t));
+void _init_ExtPack_LL(void (*receive_callback)(unit_t, uint8_t));
 
 /**
  * Sends the message to the ExtPack via UART.

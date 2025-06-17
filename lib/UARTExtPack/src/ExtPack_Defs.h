@@ -31,6 +31,10 @@
  */
 typedef uint8_t unit_type_t;
 
+#ifndef USED_UNITS
+    #define USED_UNITS 64 //Default value if no compiler flag is set
+#endif
+
 /**
  * @def EXTPACK_UNDEFINED
  * @brief Constant value representing an undefined unit type.
