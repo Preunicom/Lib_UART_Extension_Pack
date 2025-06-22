@@ -1,6 +1,7 @@
 #include "ExtPack_LL_M328P.h"
+#include "ExtPack_Internal.h"
+#include "ExtPack_Ringbuffer_Internal.h"
 
-#define BAUD_RATE 1000000
 #define BAUD_CONST (((F_CPU/(BAUD_RATE*16UL)))-1)
 
 /**
@@ -35,10 +36,7 @@ unit_t received_unit;
 
 // ----------------------------------------- Init ------------------------------------------
 
-void (*ExtPack_receive_callback)(unit_t, uint8_t);
-
-void _init_ExtPack_LL(void (*receive_callback)(unit_t, uint8_t)) {
-    ExtPack_receive_callback = receive_callback;
+void _init_ExtPack_LL() {
     /*
      * ---------- Init UART ----------
      * UART packages: 8N1 with 1 MBAUD
@@ -134,7 +132,7 @@ ISR(USART_RX_vect) {
             // Disables state machine reset timer
             TIMSK0 &= ~(1 << TOIE0);
             recv_state = RECV_UNIT_NEXT_STATE;
-            ExtPack_receive_callback(received_unit, received_data);
+            process_received_ExtPack_data(received_unit, received_data);
         }
     } else if(recv_state == RECV_INVALID_UNIT) {
         // Received unit had an error --> ignore unit data

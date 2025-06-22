@@ -29,7 +29,7 @@
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
 static inline ext_pack_error_t set_ExtPack_timer_enable(unit_t unit, uint8_t enable) {
-    return send_to_ExtPack(_set_ExtPack_access_mode(unit, 00), enable);
+    return _send_to_ExtPack(_set_ExtPack_access_mode(unit, 00), enable);
 }
 
 /**
@@ -39,7 +39,7 @@ static inline ext_pack_error_t set_ExtPack_timer_enable(unit_t unit, uint8_t ena
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
 static inline ext_pack_error_t restart_ExtPack_timer(unit_t unit) {
-    return send_to_ExtPack(_set_ExtPack_access_mode(unit, 01), 0x00);
+    return _send_to_ExtPack(_set_ExtPack_access_mode(unit, 01), 0x00);
 }
 
 /**
@@ -50,7 +50,7 @@ static inline ext_pack_error_t restart_ExtPack_timer(unit_t unit) {
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
 static inline ext_pack_error_t set_ExtPack_timer_prescaler(unit_t unit, uint8_t prescaler_divisor) {
-    return send_to_ExtPack(_set_ExtPack_access_mode(unit, 10), prescaler_divisor);
+    return _send_to_ExtPack(_set_ExtPack_access_mode(unit, 10), prescaler_divisor);
 }
 
 /**
@@ -61,25 +61,18 @@ static inline ext_pack_error_t set_ExtPack_timer_prescaler(unit_t unit, uint8_t 
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
 static inline ext_pack_error_t set_ExtPack_timer_start_value(unit_t unit, uint8_t start_value) {
-    return send_to_ExtPack(_set_ExtPack_access_mode(unit, 11), start_value);
+    return _send_to_ExtPack(_set_ExtPack_access_mode(unit, 11), start_value);
 }
 
 /**
  * Configures the timer with prescaler divisor and start value.
  * Additionally, the timer is restarted and enabled.
  *
- * @note Use max_attempts equal zero for unlimited retries. Please use this only if absolutely necessary.
- *
- * @warning Do not use SEND_MAX_ATTEMPTS on this function.
- *
  * @param unit The Timer unit of ExtPack which to configure.
  * @param prescaler_divisor The prescaler divisor value to be applied.
  * @param start_value The start value to be applied.
- * @param send_delay_us The delay waited between two sent commands. (Usually set between 100-1000us)
- * @param max_attempts The maximum attempts to send a command. 0 for unlimited retries.
- * @param retry_delay_us The delay between two send command attempts. (Usually set between 100-1000us)
- * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure. If max_attempts is set to zero always EXT_PACK_SUCCESS is returned.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
-ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor, uint8_t start_value, uint16_t send_delay_us, uint8_t max_attempts, uint16_t retry_delay_us);
+ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor, uint8_t start_value);
 
 #endif //EXTPACK_U_TIMER_H

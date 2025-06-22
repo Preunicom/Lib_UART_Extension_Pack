@@ -26,6 +26,7 @@ This library supports Reset_Unit, Error_Unit, ACK_Unit, UART_Unit, GPIO_Uni, Tim
 
 #### Receiving
 
+- All units have events which are set if the unit received something
 - custom ISRs for all units can be implemented (act like interrupted from the unit itself)
 - GPIO has an extra feature with saving the last in- and output values to have current values accessible
 - SPI also stores the last set slave id to be able to minimize control message overhead
@@ -44,7 +45,6 @@ This library supports Reset_Unit, Error_Unit, ACK_Unit, UART_Unit, GPIO_Uni, Tim
 
 **NOTE:** You are able to define your amount of used units used by the ExtPack to minimize memory usage by adding the compiler flag:
 `-DUSED_UNITS=<Amount>`
-
 
 ### Reset_Unit
 
@@ -204,21 +204,6 @@ Restarts the specified Timer unit by resetting its counter to the configured sta
 #### set_ExtPack_custom_ISR()
 
 Sets a new custom ISR for the given unit at runtime.
-
-#### SEND_MAX_ATTEMPTS()
-
-The __SEND_MAX_ATTEMPTS__ macro calls your function max_attempts times until the function returns __EXT_PACK_SUCCESS__.  
-This means you can not use the macro on __configure_ExtPack_timer()__ or __send_ExtPack_UART_String()__ as they contain more than one command.  
-You can specify how often you want to retry the function with __max_attempts__.  
-- 0 : Unlimited retries (Use with caution, could lead to very long blocking loops)
-- 1 : Tries only one time to call the function
-- \>1 : Retries for maximum x - 1 times
-
-You can also specify the time between two retries with __retry_delay_us__.  
-The value is usually in a three-digit range.  
-When __max_attempts__ is equal to zero there is no effect of __retry_delay_us__.
-
-Some functions like __send_ExtPack_UART_String()__ use SEND_MAX_ATTEMPTS and take these parameters in their own signature.
 
 ## Available types
 

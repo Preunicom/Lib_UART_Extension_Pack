@@ -36,7 +36,7 @@ void clear_ExtPack_ack_event();
 
 /**
  * @brief Retrieves the acknowledge received event of the ExtPack ACK unit (unit_U02).
- * Additionally, it sets the event to not set.
+ * Additionally, it clears the event.
  *
  * @return event set (1) or event not set (0)
  */
@@ -55,7 +55,8 @@ uint8_t get_ExtPack_ack_event();
 ext_pack_error_t wait_for_ExtPack_ACK_data(uint8_t data, uint16_t timeout_us);
 
 /**
- * @brief Blocks until an acknowledgment of the ACK unit (unit_U02) of ExtPack gets received or the timeout is over.
+ * @brief Blocks until an acknowledgment of the ACK unit (unit_U02) of ExtPack gets received or the timeout is over
+ * Resets ACK event to not set.
  * Does not compare ACK data.
  *
  * @param timeout_us Maximum time awaited in us until the function returns an error.
@@ -77,8 +78,6 @@ uint8_t get_ExtPack_ack_data();
  * @param enable Enable (>=1) or Disable (0) the unit.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
-static inline ext_pack_error_t set_ExtPack_ACK_enable(uint8_t enable) {
-    return send_to_ExtPack(_set_ExtPack_access_mode(unit_U02, 00), enable);
-}
+ext_pack_error_t set_ExtPack_ACK_enable(uint8_t enable);
 
 #endif //EXTPACK_U_ACKNOWLEDGE_H

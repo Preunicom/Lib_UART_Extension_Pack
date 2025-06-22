@@ -48,13 +48,26 @@ int main() {
     reset_ExtPack();
     _delay_us(100);
     set_ExtPack_custom_ISR(unit_U00_RST, unit_U00_custom_ISR);
-    configure_ExtPack_timer(unit_U05_TIME, 250, 56, 1000, 10, 1000);
+    configure_ExtPack_timer(unit_U05_TIME, 250, 56);
     clear_ExtPack_ack_event();
-    while (wait_for_ExtPack_ACK_data(1, 100) != EXT_PACK_SUCCESS) {
+    do {
         set_ExtPack_ACK_enable(1);
-    }
+    } while (wait_for_ExtPack_ACK_data(1, 100) != EXT_PACK_SUCCESS);
+    do {
+        set_ExtPack_I2C_partner_adr(unit_U07_I2C, 0x68);
+    } while (wait_for_ExtPack_ACK_data(0x68, 100) != EXT_PACK_SUCCESS);
     while(1) {
-        ;
+        // Read RTC
+        for (uint8_t temp = 0; temp < 7; temp++) {
+            do {
+                send_ExtPack_I2C_data(unit_U07_I2C, temp);
+            } while (wait_for_ExtPack_ACK_data(temp, 100) != EXT_PACK_SUCCESS);
+            do {
+                receive_ExtPack_I2C_data(unit_U07_I2C);
+            } while (wait_for_ExtPack_ACK_data(0x00, 100) != EXT_PACK_SUCCESS);
+            delay_us(200);
+        }
+        delay_ms(1000);
     }
 }
 
@@ -68,7 +81,7 @@ void unit_U00_custom_ISR(unit_t unit, uint8_t data) {
 
 void unit_U01_custom_ISR(unit_t unit, uint8_t data) {
     // An error occurred
-    SEND_MAX_ATTEMPTS(set_ExtPack_gpio_out(unit_U04_GPIO, get_ExtPack_data_gpio_out(unit_U04_GPIO) ^ 0b01), 10, 1000);
+    set_ExtPack_gpio_out(unit_U04_GPIO, get_ExtPack_data_gpio_out(unit_U04_GPIO) ^ 0b01);
 }
 
 void unit_U02_custom_ISR(unit_t unit, uint8_t data) {
@@ -78,37 +91,22 @@ void unit_U02_custom_ISR(unit_t unit, uint8_t data) {
 
 void unit_U03_custom_ISR(unit_t unit, uint8_t data) {
     // UART Unit data received
-    SEND_MAX_ATTEMPTS(send_ExtPack_UART_data(unit_U03_UART, data), 10, 10);
+    send_ExtPack_UART_data(unit_U03_UART, data);
 }
 
 void unit_U04_custom_ISR(unit_t unit, uint8_t data) {
     // GPIO interrupt received
     if(data == 1) {
         uint8_t string[13] = "Hello World!\n";
-        send_ExtPack_UART_String(unit_U03_UART, string, 1000, 10, 1000);
-        send_ExtPack_SPI_String(unit_U06_SPI, string, 1000, 10, 1000);
-        send_ExtPack_I2C_String(unit_U07_I2C, string, 1000, 10, 1000);
+        send_ExtPack_UART_String(unit_U03_UART, string);
+        send_ExtPack_SPI_String(unit_U06_SPI, string);
+        send_ExtPack_I2C_String(unit_U07_I2C, string);
     }
 }
 
-uint8_t i2c_counter = 0;
-
 void unit_U05_custom_ISR(unit_t unit, uint8_t data) {
     // Timer interrupt received
-    clear_ExtPack_ack_event();
-    do {
-        set_ExtPack_I2C_partner_adr(unit_U07_I2C, 0x68);
-    } while (wait_for_ExtPack_ACK_data(0x68, 100) != EXT_PACK_SUCCESS);
-    do {
-        send_ExtPack_I2C_data(unit_U07_I2C, 0x03);
-    } while (wait_for_ExtPack_ACK_data(0x03, 100) != EXT_PACK_SUCCESS);
-    do {
-        receive_ExtPack_I2C_data(unit_U07_I2C);
-    } while (wait_for_ExtPack_ACK_data(0x00, 100) != EXT_PACK_SUCCESS);
-    delay_us(100);
-    uint8_t string[13] = "Hello World!\n";
-    send_ExtPack_I2C_String(unit_U07_I2C, string, 1000, 10, 1000);
-    //SEND_MAX_ATTEMPTS(set_ExtPack_gpio_out(unit_U04_GPIO, get_ExtPack_data_gpio_out(unit_U04_GPIO) ^ 0b10), 10, 1000);
+    set_ExtPack_gpio_out(unit_U04_GPIO, get_ExtPack_data_gpio_out(unit_U04_GPIO) ^ 0b10);
 }
 
 void unit_U06_custom_ISR(unit_t unit, uint8_t data) {
@@ -121,5 +119,5 @@ void unit_U06_custom_ISR(unit_t unit, uint8_t data) {
 
 void unit_U07_custom_ISR(unit_t unit, uint8_t data) {
     // I2C message received
-    i2c_counter++;
+    ;
 }

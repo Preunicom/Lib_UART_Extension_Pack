@@ -91,9 +91,9 @@ typedef uint8_t unit_type_t;
 
 /**
  * @typedef ext_pack_error_t
- * Type alias for ExtPack errors.
+ * @brief Type alias for ExtPack function errors.
  *
- * @details 'ext_pack_error_t' is defined as uint8_t and is used to represent ExtPack errors.
+ * @details 'ext_pack_error_t' is defined as uint8_t and is used to represent ExtPack function errors.
  */
 typedef uint8_t ext_pack_error_t;
 

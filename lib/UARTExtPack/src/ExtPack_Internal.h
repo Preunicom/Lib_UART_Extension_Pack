@@ -39,18 +39,6 @@
 #define ACC_MODE1_BIT 7
 
 /**
- * @def ACK_EVENT
- * @brief Constant value representing the acknowledge received event x-th bit of unit data output for ACK unit. Used to shift bits to mask data to match the acknowledge received event bit.
- */
-#define ACK_EVENT 7
-
-/**
- * @def ACK_STATE
- * @brief Constant value representing the status x-th bit of unit data output for ACK unit. Used to shift bits to mask data to match the ACK unit active/not active bit.
- */
-#define ACK_STATE 0
-
-/**
  * @struct unit
  * Structure representing a unit in ExtPack.
  *
@@ -126,5 +114,13 @@ inline uint8_t get_ExtPack_stored_unit_output_values(unit_t unit) {
 inline uint8_t get_ExtPack_stored_unit_input_values(unit_t unit) {
     return unit_data[unit].input_values;
 }
+
+/**
+ * Processes the data received from ExtPAck via UART.
+ *
+ * @param unit The received unit byte.
+ * @param data The received data byte
+ */
+void process_received_ExtPack_data(unit_t unit, uint8_t data);
 
 #endif //EXTPACK_INTERNAL_H

@@ -22,7 +22,7 @@
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
 static inline ext_pack_error_t reset_ExtPack() {
-    return send_to_ExtPack(unit_U00, 0xFF);
+    return _send_to_ExtPack(unit_U00, 0xFF);
 }
 
 #endif //EXTPACK_U_RESET_H

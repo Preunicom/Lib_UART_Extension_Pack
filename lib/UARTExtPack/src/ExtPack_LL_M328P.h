@@ -26,6 +26,23 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#define BAUD_RATE 1000000
+
+/**
+ * @def EXT_PACK_SOFTWARE_OVERHEAD_UART_TRANSMISSION_CLOCK_CYCLES
+ *
+ * @brief Calculates the amount of clock cycles an ExtPack UART transmission needs on top of the UART transmission duration itself.
+ */
+#define EXT_PACK_SOFTWARE_OVERHEAD_UART_TRANSMISSION_CLOCK_CYCLES 25
+
+/**
+ * @def EXT_PACK_UART_BITS_PER_COMMAND_PAIR
+ *
+ * @brief The amount of bits sent via UART per ExtPack command pair.
+ * @note start bits + data bits + parity bits + stop bits
+ */
+#define EXT_PACK_UART_BITS_PER_COMMAND_PAIR 20
+
 /**
  * Saves the status register while in a critical zone
  */
@@ -36,7 +53,7 @@ uint8_t ExtPack_LL_SREG_save;
  *
  * @param receive_callback Callback to be called when data from the ExtPack was received via UART.
  */
-void _init_ExtPack_LL(void (*receive_callback)(unit_t, uint8_t));
+void _init_ExtPack_LL();
 
 /**
  * Sends the message to the ExtPack via UART.

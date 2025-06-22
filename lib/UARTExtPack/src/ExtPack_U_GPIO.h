@@ -1,4 +1,3 @@
-
 /**
  * @file ExtPack_U_GPIO.h
  *
@@ -27,7 +26,7 @@
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
 static inline ext_pack_error_t refresh_ExtPack_gpio_data(unit_t unit) {
-    return send_to_ExtPack(_set_ExtPack_access_mode(unit, 01), 0x00);
+    return _send_to_ExtPack(_set_ExtPack_access_mode(unit, 01), 0x00);
 }
 
 /**
@@ -53,8 +52,6 @@ uint8_t get_ExtPack_data_gpio_out(unit_t unit);
  * @param data The GPIO pin register value to set.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
-static inline ext_pack_error_t set_ExtPack_gpio_out(unit_t unit, uint8_t data) {
-    return send_to_ExtPack(_set_ExtPack_access_mode(unit, 00), data);
-}
+ext_pack_error_t set_ExtPack_gpio_out(unit_t unit, uint8_t data);
 
 #endif //EXTPACK_U_GPIO_H
