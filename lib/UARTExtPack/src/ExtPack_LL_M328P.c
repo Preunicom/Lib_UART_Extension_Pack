@@ -37,6 +37,8 @@ volatile uint8_t next_data_to_send;
 volatile uint8_t next_data_to_send_is_buffer_pair = 1;
 volatile unit_t received_unit;
 
+uint8_t ExtPack_LL_SREG_save;
+
 // ----------------------------------------- Init ------------------------------------------
 
 void _init_ExtPack_LL() {

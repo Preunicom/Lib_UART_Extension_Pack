@@ -28,6 +28,12 @@
 
 #if defined(__AVR_ATmega328P__)
     #include "ExtPack_LL_M328P.h"
+#elif defined(__AVR_ATmega808__)
+    #include "ExtPack_LL_M808.h"
+#elif defined(__AVR_ATtiny212__)
+    #include "ExtPack_LL_T212.h"
+#elif defined(__AVR_ATtiny416__)
+    #include "ExtPack_LL_T416.h"
 #else
     #error Unsupported microcontroller!
 #endif

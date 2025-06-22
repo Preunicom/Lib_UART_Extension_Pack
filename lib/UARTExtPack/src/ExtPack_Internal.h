@@ -91,7 +91,7 @@ struct unit_data_storage {
  * @note The array is initialized with zeros, and its size is determined by the `USED_UNITS` constant.
  *       It is used to manage and store the data for all active units which needs it within the system.
  */
-struct unit_data_storage unit_data[USED_UNITS];
+extern struct unit_data_storage unit_data[USED_UNITS];
 
 /**
  * Returns the stored output data of the given unit of ExtPack.

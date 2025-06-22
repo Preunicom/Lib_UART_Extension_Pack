@@ -1,0 +1,8 @@
+#!/bin/sh
+# This file can be chosen as an executable in CLion to run a makefile configuration instead of only building it.
+# When using it for the clean configuration this file has to be called with "clean" as an argument.
+if [ "$1" != "clean" ]; then
+    make stats
+else
+    echo "Cleaned up project."
+fi

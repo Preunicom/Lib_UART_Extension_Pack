@@ -46,7 +46,7 @@
 /**
  * Saves the status register while in a critical zone
  */
-uint8_t ExtPack_LL_SREG_save;
+extern uint8_t ExtPack_LL_SREG_save;
 
 /**
  * Initializes the communication hardware.
