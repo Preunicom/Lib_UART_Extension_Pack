@@ -1,7 +1,7 @@
 #include "ExtPack_U_Acknowledge.h"
 #include "ExtPack_Internal.h"
 #include <util/delay.h>
-#include <ExtPack_Events_Internal.h>
+#include <ExtPack_Events.h>
 
 uint8_t get_ExtPack_ack_state() {
     return get_ExtPack_stored_unit_output_values(unit_U02) > 0;

@@ -49,6 +49,7 @@ int main() {
     _delay_us(100);
     set_ExtPack_custom_ISR(unit_U00_RST, unit_U00_custom_ISR);
     configure_ExtPack_timer(unit_U05_TIME, 250, 56);
+    /*
     clear_ExtPack_ack_event();
     do {
         set_ExtPack_ACK_enable(1);
@@ -59,9 +60,11 @@ int main() {
     while(1) {
         // Read RTC
         for (uint8_t temp = 0; temp < 7; temp++) {
+            clear_ExtPack_ack_event(); // Interrupt sent messages does not clear ACK event
             do {
                 send_ExtPack_I2C_data(unit_U07_I2C, temp);
             } while (wait_for_ExtPack_ACK_data(temp, 100) != EXT_PACK_SUCCESS);
+            clear_ExtPack_ack_event();
             do {
                 receive_ExtPack_I2C_data(unit_U07_I2C);
             } while (wait_for_ExtPack_ACK_data(0x00, 100) != EXT_PACK_SUCCESS);
@@ -69,6 +72,8 @@ int main() {
         }
         delay_ms(1000);
     }
+    */
+    while (1);
 }
 
 void unit_U00_custom_ISR(unit_t unit, uint8_t data) {
@@ -97,10 +102,10 @@ void unit_U03_custom_ISR(unit_t unit, uint8_t data) {
 void unit_U04_custom_ISR(unit_t unit, uint8_t data) {
     // GPIO interrupt received
     if(data == 1) {
-        uint8_t string[13] = "Hello World!\n";
-        send_ExtPack_UART_String(unit_U03_UART, string);
-        send_ExtPack_SPI_String(unit_U06_SPI, string);
-        send_ExtPack_I2C_String(unit_U07_I2C, string);
+        uint8_t string[14] = "Hello World!\n";
+        send_ExtPack_UART_String(unit_U03_UART, string, 15);
+        send_ExtPack_SPI_String(unit_U06_SPI, string, 15);
+        send_ExtPack_I2C_String_to_partner(unit_U07_I2C, 0x68, string, 30);
     }
 }
 

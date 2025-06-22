@@ -32,10 +32,11 @@ static inline ext_pack_error_t send_ExtPack_UART_data(unit_t unit, uint8_t data)
  *
  * @param unit The ExtPack unit to which the data should be sent.
  * @param data The data to be sent as String with terminating '\0'.
+ * @param send_byte_delay_us The delay between sending two bytes in us.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if the function was aborted when sending a uint8_t because of an error while sending.
  */
-static inline ext_pack_error_t send_ExtPack_UART_String(unit_t unit, const uint8_t* data) {
-    return send_String_to_ExtPack(unit, data);
+static inline ext_pack_error_t send_ExtPack_UART_String(unit_t unit, const uint8_t* data, uint8_t send_byte_delay_us) {
+    return send_String_to_ExtPack(unit, data, send_byte_delay_us);
 }
 
 #endif //EXTPACK_U_UART_H

@@ -87,10 +87,11 @@ static inline ext_pack_error_t send_ExtPack_I2C_data(unit_t unit, uint8_t data) 
  *
  * @param unit The ExtPack unit to which the data should be sent. Including the correct set access mode for sending.
  * @param data The data to be sent as String with terminating '\0'.
+ * @param send_byte_delay_us The delay between sending two bytes in us.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if the function was aborted when sending an uint8_t because of an error while sending.
  */
-static inline ext_pack_error_t send_ExtPack_I2C_String(unit_t unit, const uint8_t* data) {
-    return send_String_to_ExtPack(_set_ExtPack_access_mode(unit, 00), data);
+static inline ext_pack_error_t send_ExtPack_I2C_String(unit_t unit, const uint8_t* data, uint8_t send_byte_delay_us) {
+    return send_String_to_ExtPack(_set_ExtPack_access_mode(unit, 00), data, send_byte_delay_us);
 }
 
 /**
@@ -110,8 +111,9 @@ ext_pack_error_t send_ExtPack_I2C_data_to_partner(unit_t unit, uint8_t partner_a
  * @param unit The ExtPack unit to which the data should be sent.
  * @param partner_adr The partner address to send the data to.
  * @param data The data to be sent as String with terminating '\0'.
+ * @param send_byte_delay_us The delay between sending two bytes in us.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if the function was aborted when sending a char because of an error while sending.
  */
-ext_pack_error_t send_ExtPack_I2C_String_to_partner(unit_t unit, uint8_t partner_adr, const uint8_t* data);
+ext_pack_error_t send_ExtPack_I2C_String_to_partner(unit_t unit, uint8_t partner_adr, const uint8_t* data, uint8_t send_byte_delay_us);
 
 #endif //EXTPACK_U_I2C_H

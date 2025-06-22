@@ -1,7 +1,7 @@
 #include "ExtPack.h"
 #include "ExtPack_Internal.h"
 #include "Dynamic_Delay.h"
-#include "ExtPack_Events_Internal.h"
+#include "ExtPack_Events.h"
 
 #define NULL (void*)0
 
@@ -10,6 +10,7 @@ struct unit units[USED_UNITS] = {0};
 struct unit_data_storage unit_data[USED_UNITS] = {0};
 
 void init_ExtPack(void (*reset_ISR)(unit_t, uint8_t), void (*error_ISR)(unit_t, uint8_t), void (*ack_ISR)(unit_t, uint8_t)) {
+    _init_ExtPack_LL();
     init_ExtPack_Unit(unit_U00, EXTPACK_RESET_UNIT, reset_ISR);
     init_ExtPack_Unit(unit_U01, EXTPACK_ERROR_UNIT, error_ISR);
     init_ExtPack_Unit(unit_U02, EXTPACK_ACK_UNIT, ack_ISR);
@@ -57,14 +58,13 @@ ext_pack_error_t _send_to_ExtPack(unit_t unit, uint8_t data) {
     return EXT_PACK_FAILURE;
 }
 
-ext_pack_error_t send_String_to_ExtPack(unit_t unit, const uint8_t* data) {
-    uint8_t send_delay_us = get_ExtPack_send_duration_us();
+ext_pack_error_t send_String_to_ExtPack(unit_t unit, const uint8_t* data, uint8_t send_byte_delay_us) {
     int index = 0;
     while (data[index] != '\0') {
         if(_send_to_ExtPack(unit, data[index++]) == EXT_PACK_FAILURE) {
             return EXT_PACK_FAILURE;
         }
-        delay_us(send_delay_us);
+        delay_us(send_byte_delay_us);
     }
     return EXT_PACK_SUCCESS;
 }

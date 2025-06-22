@@ -49,9 +49,7 @@
 uint8_t ExtPack_LL_SREG_save;
 
 /**
- * Initializes the communication hardware and prepare the receive callback function.
- *
- * @param receive_callback Callback to be called when data from the ExtPack was received via UART.
+ * Initializes the communication hardware.
  */
 void _init_ExtPack_LL();
 

@@ -1,6 +1,6 @@
 #include "ExtPack_Ringbuffer_Internal.h"
 
-void init_ringbuffer_metadata(ringbuffer_t buf, uint8_t buf_len, ringbuffer_metadata_t* metadata) {
+void init_ringbuffer_metadata(ringbuffer_t buf, uint8_t buf_len, volatile ringbuffer_metadata_t* metadata) {
     metadata->data = buf;
     metadata->buf_len = buf_len;
     metadata->free_slots = buf_len;
@@ -8,29 +8,29 @@ void init_ringbuffer_metadata(ringbuffer_t buf, uint8_t buf_len, ringbuffer_meta
     metadata->next_write_slot_index = 0;
 }
 
-uint8_t write_buf(ringbuffer_metadata_t* metadata, ringbuffer_elem_t data) {
+ext_pack_error_t write_buf(volatile ringbuffer_metadata_t* metadata, ringbuffer_elem_t data) {
     enter_critical_zone();
     if(metadata->free_slots == 0) {
         exit_critical_zone();
-        return 1;
+        return EXT_PACK_FAILURE;
     }
     metadata->data[metadata->next_write_slot_index] = data;
     metadata->next_write_slot_index = (metadata->next_write_slot_index + 1) % metadata->buf_len;
     metadata->free_slots--;
     exit_critical_zone();
-    return 0;
+    return EXT_PACK_SUCCESS;
 }
 
-ringbuffer_elem_t read_buf(ringbuffer_metadata_t* metadata, ringbuffer_elem_t* data) {
+ext_pack_error_t read_buf(volatile ringbuffer_metadata_t* metadata, ringbuffer_elem_t* data) {
     enter_critical_zone();
     if (metadata->free_slots == metadata->buf_len) {
         exit_critical_zone();
-        return 1; // Error, nothing to read
+        return EXT_PACK_FAILURE; // Error, nothing to read
     }
     uint8_t current_read_index = metadata->next_read_slot_index;
     metadata->next_read_slot_index = (metadata->next_read_slot_index + 1) % metadata->buf_len;
     metadata->free_slots++;
     *data = metadata->data[current_read_index];
     exit_critical_zone();
-    return 1;
+    return EXT_PACK_SUCCESS;
 }
