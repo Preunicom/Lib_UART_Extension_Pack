@@ -2,7 +2,7 @@ TARGET = Lib_UART_Extension_Pack
 MCU_AVR_GCC = atmega328p
 MCU_AVRDUDE = m328p
 F_CPU = 16000000L
-C_DEFINES = -DUSED_UNITS=8
+DEFINES = USED_UNITS=8 SEND_BUF_LEN=0
 
 PROGRAMMER = usbasp
 PROGRAMMER_PORT =
@@ -24,6 +24,7 @@ OBJDUMP = avr-objdump
 NM = avr-nm
 AVRDUDE = avrdude
 LIB_INCLUDES := $(addprefix -I,$(addsuffix /src,$(LIBS)))
+C_DEFINES = $(addprefix -D,$(DEFINES))
 CFLAGS = -Wall -Os -mmcu=$(MCU_AVR_GCC) -flto -fno-fat-lto-objects -DF_CPU=$(F_CPU) $(C_DEFINES) -std=c23 -I$(SRC_DIR) $(LIB_INCLUDES)
 NMFLAGS = -S --size-sort -td
 ASFLAGS = -mmcu=$(MCU_AVR_GCC)

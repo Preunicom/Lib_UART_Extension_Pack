@@ -30,11 +30,22 @@
 
 volatile state_type recv_state = RECV_UNIT_NEXT_STATE;
 
-volatile ringbuffer_elem_t send_buf[10];
+#ifndef SEND_BUF_LEN
+    #warning SEND_BUF_LEN not defined! Setting default value (10).
+    #define SEND_BUF_LEN 10
+#endif
+#if SEND_BUF_LEN % 2 != 0
+    #error SEND_BUF_LEN not even or too small!
+#endif
+
+#if SEND_BUF_LEN > 0
+volatile ringbuffer_elem_t send_buf[SEND_BUF_LEN];
 volatile ringbuffer_metadata_t send_buf_metadata;
 
-volatile uint8_t next_data_to_send;
 volatile uint8_t next_data_to_send_is_buffer_pair = 1;
+#endif
+
+volatile uint8_t next_data_to_send;
 volatile unit_t received_unit;
 
 uint8_t ExtPack_LL_SREG_save;
@@ -42,8 +53,10 @@ uint8_t ExtPack_LL_SREG_save;
 // ----------------------------------------- Init ------------------------------------------
 
 void _init_ExtPack_LL() {
+#if SEND_BUF_LEN > 0
     // ------- Init ringbuffer -------
-    init_ringbuffer_metadata(send_buf, 10, &send_buf_metadata);
+    init_ringbuffer_metadata(send_buf, SEND_BUF_LEN, &send_buf_metadata);
+#endif
     /*
      * ---------- Init UART ----------
      * UART packages: 8N1 with 1 MBAUD
@@ -75,6 +88,7 @@ void _init_ExtPack_LL() {
 // ---------------------------------------- Sending ----------------------------------------
 
 ext_pack_error_t _send_UART_ExtPack_message(unit_t unit, uint8_t data) {
+#if SEND_BUF_LEN > 0
     cli();
     uint8_t is_first_command = is_buf_empty(&send_buf_metadata);
     // Add to buffer
@@ -86,12 +100,36 @@ ext_pack_error_t _send_UART_ExtPack_message(unit_t unit, uint8_t data) {
     }
     sei();
     return ret;
+#else
+    cli();
+    // Enter critical zone
+    // Send data if:
+    // - UART data register is empty
+    // - Data register empty interrupt is not active (so no data is in queue to be sent)
+    if(
+        (UCSR0A & (1<<UDRE0)) // Check if data register empty is set --> UART buffer empty
+        && (~(UCSR0B) & (1<<UDRIE0)) // Check if data register empty interrupts are enabled --> buffer is reserved for following unit data
+        ) {
+        // UART data register empty, no data in queue to be sent and unit number valid
+        UDR0 = unit;
+        next_data_to_send = data;
+        // Activate data register empty interrupt
+        UCSR0B |= (1 << UDRIE0);
+        sei(); // Exit critical zone
+        return EXT_PACK_SUCCESS;
+        } else {
+            // Not ready to send data pair
+            sei(); // Exit critical zone
+            return EXT_PACK_FAILURE;
+        }
+#endif
 }
 
 /*
  * Sends next buffer data pair or second part of data pair
  */
 ISR(USART_UDRE_vect) {
+#if SEND_BUF_LEN > 0
     // UART data register empty
     if(next_data_to_send_is_buffer_pair) {
         // Send buffer data
@@ -114,6 +152,13 @@ ISR(USART_UDRE_vect) {
             UCSR0B &= ~(1<<UDRIE0);
         }
     }
+#else
+    // UART data register empty
+    UDR0 = next_data_to_send;
+    // Deactivate data register empty interrupt
+    UCSR0B &= ~(1<<UDRIE0);
+#endif
+
 }
 
 // --------------------------------------- Receiving ---------------------------------------

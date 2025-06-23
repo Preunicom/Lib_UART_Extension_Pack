@@ -44,7 +44,12 @@ This library supports Reset_Unit, Error_Unit, ACK_Unit, UART_Unit, GPIO_Uni, Tim
    - your custom ISR (of type __void (*func)(unit_t, char)__)
 
 **NOTE:** You are able to define your amount of used units used by the ExtPack to minimize memory usage by adding the compiler flag:
-`-DUSED_UNITS=<Amount>`
+`-DUSED_UNITS=<Amount>`  
+**NOTE:** You are able to set the size of the UART send ringbuffer by setting the compiler flag:
+`-DSEND_BUF_LEN=<Amount commands>`  
+The default value depends on the used microcontroller.  
+You are also able to deactivate the whole ring buffer by setting the size to 0.
+This will reduce the used flash for the library.
 
 ### Reset_Unit
 
