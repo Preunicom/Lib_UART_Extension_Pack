@@ -28,7 +28,7 @@ typedef uint8_t error_unit_error_type_t;
  * @def ERROR_UNIT_ERROR_RECEIVING_FROM_HOST
  * @brief Constant value representing an error sent by the ExtPack because of an error while receiving UART data from host.
  */
-#define ERROR_UNIT_ERROR_RECEIVING_FROM_HOST 0
+#define ERROR_UNIT_ERROR_RECEIVING_FROM_HOST 1
 
 /**
  * @def ERROR_UNIT_ERROR_SENDING_TO_HOST

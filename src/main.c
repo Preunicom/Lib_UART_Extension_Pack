@@ -48,8 +48,8 @@ int main() {
     reset_ExtPack();
     _delay_us(100);
     set_ExtPack_custom_ISR(unit_U00_RST, unit_U00_custom_ISR);
-    configure_ExtPack_timer(unit_U05_TIME, 250, 56);
-    /*
+    //configure_ExtPack_timer(unit_U05_TIME, 250, 56);
+/*
     clear_ExtPack_ack_event();
     do {
         set_ExtPack_ACK_enable(1);
@@ -72,15 +72,20 @@ int main() {
         }
         delay_ms(1000);
     }
-    */
-    while (1);
+*/
+    while (1) ;
 }
 
 void unit_U00_custom_ISR(unit_t unit, uint8_t data) {
     // ExtPack was reset
     if ((uint8_t)data == 0xFF) {
+#if defined(__AVR_ATmega328P__)
         // Reset controller
         __asm__ __volatile__("jmp 0x0000");
+#else
+        CCP = 0xD8; // Unprotection
+        RSTCTRL.SWRR = RSTCTRL_SWRE_bm; // Reset
+#endif
     }
 }
 
@@ -95,26 +100,33 @@ void unit_U02_custom_ISR(unit_t unit, uint8_t data) {
 }
 
 void unit_U03_custom_ISR(unit_t unit, uint8_t data) {
+    enable_global_interrupts();
     // UART Unit data received
     send_ExtPack_UART_data(unit_U03_UART, data);
 }
 
 void unit_U04_custom_ISR(unit_t unit, uint8_t data) {
+    enable_global_interrupts();
     // GPIO interrupt received
     if(data == 1) {
         uint8_t string[14] = "Hello World!\n";
-        send_ExtPack_UART_String(unit_U03_UART, string, 15);
-        send_ExtPack_SPI_String(unit_U06_SPI, string, 15);
-        send_ExtPack_I2C_String_to_partner(unit_U07_I2C, 0x68, string, 30);
+        send_ExtPack_UART_String(unit_U03_UART, string, 100);
+        //send_ExtPack_SPI_String(unit_U06_SPI, string, 50);
+        //send_ExtPack_I2C_String_to_partner(unit_U07_I2C, 0x68, string, 57);
+    } else {
+        uint8_t string[12] = "Bye World!\n";
+        send_ExtPack_UART_String(unit_U03_UART, string, 100);
     }
 }
 
 void unit_U05_custom_ISR(unit_t unit, uint8_t data) {
+    enable_global_interrupts();
     // Timer interrupt received
     set_ExtPack_gpio_out(unit_U04_GPIO, get_ExtPack_data_gpio_out(unit_U04_GPIO) ^ 0b10);
 }
 
 void unit_U06_custom_ISR(unit_t unit, uint8_t data) {
+    enable_global_interrupts();
     // SPI message received
     if (data != 0) {
         // Got content
@@ -123,6 +135,7 @@ void unit_U06_custom_ISR(unit_t unit, uint8_t data) {
 }
 
 void unit_U07_custom_ISR(unit_t unit, uint8_t data) {
+    enable_global_interrupts();
     // I2C message received
     ;
 }

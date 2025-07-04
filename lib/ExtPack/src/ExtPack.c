@@ -28,7 +28,8 @@ void set_ExtPack_custom_ISR(unit_t unit, void (*new_custom_ISR)(unit_t, uint8_t)
 void process_received_ExtPack_data(unit_t unit, uint8_t data) {
     if(unit <= USED_UNITS
         && !(unit & (1<<ACC_MODE1_BIT))
-        && !(unit & (1<<ACC_MODE0_BIT))) {
+        && !(unit & (1<<ACC_MODE0_BIT)))
+    {
         // Valid unit and no access mode bit set
         void (*custom_ISR)(unit_t, uint8_t) = units[unit].custom_ISR;
         switch (units[unit].unit_type) {
@@ -42,7 +43,7 @@ void process_received_ExtPack_data(unit_t unit, uint8_t data) {
             // Calls ISR of unit if set
             custom_ISR(unit, data);
         }
-        }
+    }
 }
 
 /*

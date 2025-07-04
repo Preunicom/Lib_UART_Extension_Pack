@@ -1,7 +1,7 @@
 /**
- * @file ExtPack_LL_M328P.h
+* @file ExtPack_LL_M808.h
  *
- * @brief Low-level UART communication support for the ExtPack on ATMega328P.
+ * @brief Low-level UART communication support for the ExtPack on ATMega808.
  *
  * This header declares initialization and message-sending functions and
  * provides critical section macros to ensure safe UART communication
@@ -12,20 +12,25 @@
  * - Enter / Exit critical zones
  *
  * ## Internal Hardware Components Used:
- * - **USART0** (TX: PD1, RX: PD0)
- * - **Timer/Counter0**
+ * - **USART0** (TX: PA0, RX: PA1)
+ * - **Timer/CounterA**
  *
  * @author Markus Remy
- * @date 16.06.2025
+ * @date 23.06.2025
  */
 
-#ifndef EXTPACK_LL_M328P_H
-#define EXTPACK_LL_M328P_H
+#ifndef EXTPACK_LL_M808_H
+#define EXTPACK_LL_M808_H
 
 #include "ExtPack_Defs.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+/**
+ * @def BAUD_RATE
+ *
+ * @brief The BAUD rate used to communicate with the ExtPack.
+ */
 #define BAUD_RATE 1000000
 
 /**
@@ -46,7 +51,7 @@
 /**
  * Saves the status register while in a critical zone
  */
-extern uint8_t ExtPack_LL_SREG_save;
+extern volatile uint8_t ExtPack_LL_SREG_save;
 
 /**
  * Initializes the communication hardware.
@@ -70,10 +75,10 @@ ext_pack_error_t _send_UART_ExtPack_message(unit_t unit, uint8_t data);
  * This is used to enter a critical zone.
  */
 #define enter_critical_zone() \
-    do { \
-        ExtPack_LL_SREG_save = SREG; \
-        cli(); \
-    } while (0)
+do { \
+ExtPack_LL_SREG_save = CPU_SREG; \
+cli(); \
+} while (0)
 
 /**
  * @def exit_critical_zone()
@@ -85,8 +90,16 @@ ext_pack_error_t _send_UART_ExtPack_message(unit_t unit, uint8_t data);
  * @warning Do not use before calling enter_critical_zone()!
  */
 #define exit_critical_zone() \
-    do { \
-        SREG = ExtPack_LL_SREG_save; \
-    } while (0)
+do { \
+CPU_SREG = ExtPack_LL_SREG_save; \
+} while (0)
 
-#endif //EXTPACK_LL_M328P_H
+/**
+ * @def enable_global_interrupts
+ *
+ * @brief This macro enables global interrupts.
+ * @note Use when entering long callback ISR unit functions
+ */
+#define enable_global_interrupts() sei()
+
+#endif //EXTPACK_LL_M808_H

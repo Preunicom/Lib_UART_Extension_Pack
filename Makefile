@@ -1,11 +1,11 @@
 TARGET = Lib_UART_Extension_Pack
-MCU_AVR_GCC = atmega328p
-MCU_AVRDUDE = m328p
-F_CPU = 16000000L
-DEFINES = USED_UNITS=8 SEND_BUF_LEN=0
+MCU_AVR_GCC ?= atmega808
+MCU_AVRDUDE ?= m808
+F_CPU ?= 20000000UL
+DEFINES ?= USED_UNITS=8 SEND_BUF_LEN=10
 
-PROGRAMMER = usbasp
-PROGRAMMER_PORT =
+PROGRAMMER ?= serialupdi
+PROGRAMMER_PORT ?= /dev/tty.usbserial-110
 
 PROGRAMMER_PORT_EXP = $(if $(PROGRAMMER_PORT),-P $(PROGRAMMER_PORT),)
 
@@ -23,16 +23,20 @@ OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 NM = avr-nm
 AVRDUDE = avrdude
+
+EXTPACK_HAL_DIR := lib/ExtPack/src/HAL
+EXTPACK_HAL_SRC := $(EXTPACK_HAL_DIR)/ExtPack_LL_$(MCU_AVRDUDE).c
 LIB_INCLUDES := $(addprefix -I,$(addsuffix /src,$(LIBS)))
 C_DEFINES = $(addprefix -D,$(DEFINES))
-CFLAGS = -Wall -Os -mmcu=$(MCU_AVR_GCC) -flto -fno-fat-lto-objects -DF_CPU=$(F_CPU) $(C_DEFINES) -std=c23 -I$(SRC_DIR) $(LIB_INCLUDES)
+CFLAGS = -Wall -Os -mmcu=$(MCU_AVR_GCC) -flto -fno-fat-lto-objects -DF_CPU=$(F_CPU) $(C_DEFINES) -std=c23 -I$(SRC_DIR) $(LIB_INCLUDES) -I$(EXTPACK_HAL_DIR)
 NMFLAGS = -S --size-sort -td
 ASFLAGS = -mmcu=$(MCU_AVR_GCC)
 LDFLAGS = -mmcu=$(MCU_AVR_GCC)
 
 SRC = $(shell find $(SRC_DIR) -name '*.c')
-LIB_SRCS := $(shell find $(addsuffix /src,$(LIBS)) -name '*.c')
-SRCS = $(SRC) $(LIB_SRCS)
+ALL_LIB_SRCS := $(shell find $(addsuffix /src,$(LIBS)) -name '*.c')
+LIB_SRCS := $(filter-out $(EXTPACK_HAL_DIR)/%.c,$(ALL_LIB_SRCS))
+SRCS = $(SRC) $(LIB_SRCS) $(EXTPACK_HAL_SRC)
 
 OBJ = $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 
