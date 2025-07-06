@@ -61,9 +61,6 @@ volatile uint8_t ExtPack_LL_SREG_save;
 
 void _init_ExtPack_LL() {
     CPUINT_LVL1VEC = USART0_DRE_vect_num; // Set UART data register empty interrupt to higher priority as receive interrupt
-    uint8_t temp = CLKCTRL.MCLKCTRLB & ~CLKCTRL_PEN_bm; // Disable global clk Prescaler
-    CCP = 0xD8; // Disable change protection of Prescaler to write data
-    CLKCTRL.MCLKCTRLB = temp;
 #if SEND_BUF_LEN > 0
     // ------- Init ringbuffer -------
     init_ringbuffer_metadata(send_buf, SEND_BUF_LEN, &send_buf_metadata);
@@ -77,10 +74,10 @@ void _init_ExtPack_LL() {
     USART0.BAUD = BAUD_CONST;
     //Set 8-bit data
     USART0.CTRLC |= USART_CHSIZE_8BIT_gc;
-    //Set TX to output
-    PORTA_DIRSET |= PIN0_bm;
     //Set RX and TX to enabled
     USART0.CTRLB |= USART_RXEN_bm | USART_TXEN_bm;
+    //Set TX to output
+    PORTA_DIRSET |= PIN0_bm;
     //Enable interrupt RX Complete
     USART0.CTRLA |= USART_RXCIE_bm;
     /*

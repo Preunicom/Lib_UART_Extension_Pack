@@ -1,5 +1,5 @@
 /**
-* @file ExtPack_LL_M808.h
+* @file ExtPack_LL_m808.h
  *
  * @brief Low-level UART communication support for the ExtPack on ATMega808.
  *

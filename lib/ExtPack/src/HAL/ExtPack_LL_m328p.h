@@ -1,5 +1,5 @@
 /**
- * @file ExtPack_LL_M328P.h
+ * @file ExtPack_LL_m328p.h
  *
  * @brief Low-level UART communication support for the ExtPack on ATMega328P.
  *

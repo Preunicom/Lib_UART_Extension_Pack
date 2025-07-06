@@ -30,6 +30,11 @@ void unit_U06_custom_ISR(unit_t, uint8_t);
 void unit_U07_custom_ISR(unit_t, uint8_t);
 
 int main() {
+#ifndef __AVR_ATmega328P__
+    uint8_t temp = CLKCTRL.MCLKCTRLB & ~CLKCTRL_PEN_bm; // Disable global clk Prescaler
+    CCP = 0xD8; // Disable change protection of Prescaler to write data
+    CLKCTRL.MCLKCTRLB = temp;
+#endif
     // Initialize the UART Extension Pack
     init_ExtPack(NULL, unit_U01_custom_ISR, unit_U02_custom_ISR);
     init_ExtPack_Unit(unit_U03_UART, EXTPACK_UART_UNIT, unit_U03_custom_ISR);
@@ -48,7 +53,7 @@ int main() {
     reset_ExtPack();
     _delay_us(100);
     set_ExtPack_custom_ISR(unit_U00_RST, unit_U00_custom_ISR);
-    //configure_ExtPack_timer(unit_U05_TIME, 250, 56);
+    configure_ExtPack_timer(unit_U05_TIME, 250, 56);
 /*
     clear_ExtPack_ack_event();
     do {
@@ -73,7 +78,8 @@ int main() {
         delay_ms(1000);
     }
 */
-    while (1) ;
+    delay_ms(2500);
+    while (1);
 }
 
 void unit_U00_custom_ISR(unit_t unit, uint8_t data) {
