@@ -1,5 +1,3 @@
-.pio
 .idea/
 .DS_STORE
-include/
-test/
+build/
