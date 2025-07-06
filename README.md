@@ -2,7 +2,7 @@
 
 ## Communication
 
-ATMega328P communicates with the UART_Extension_Pack with 8N1 and 1 MBaud.
+The microcontroller communicates with the Extension_Pack with 8N1 and 1 MBaud UART.
 
 ## Functionality
 ### Units
@@ -49,7 +49,7 @@ This library supports Reset_Unit, Error_Unit, ACK_Unit, UART_Unit, GPIO_Uni, Tim
 `-DSEND_BUF_LEN=<Amount commands>`  
 The default value depends on the used microcontroller.  
 You are also able to deactivate the whole ring buffer by setting the size to 0.
-This will reduce the used flash for the library.
+This will reduce the used memory for the library.
 
 ### Reset_Unit
 

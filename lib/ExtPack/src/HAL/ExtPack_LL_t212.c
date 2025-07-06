@@ -39,7 +39,7 @@ volatile state_type recv_state = RECV_UNIT_NEXT_STATE;
 
 #ifndef SEND_BUF_LEN
     #warning SEND_BUF_LEN not defined! Setting default value (10).
-    #define SEND_BUF_LEN 10
+    #define SEND_BUF_LEN 0
 #endif
 #if SEND_BUF_LEN % 2 != 0
     #error SEND_BUF_LEN not even or too small!
@@ -60,7 +60,7 @@ volatile uint8_t ExtPack_LL_SREG_save;
 // ----------------------------------------- Init ------------------------------------------
 
 void _init_ExtPack_LL() {
-    CPUINT_LVL1VEC = USART0_DRE_vect_num; // Set UART data register empty interrupt to higher priority as receive interrupt
+    CPUINT_LVL1VEC = USART0_DRE_vect_num; // Set UART data register empty interrupt to higher priority as receive interrupt (Otherwise sending will be interrupted by receiving which leads to malformed command pairs)
 #if SEND_BUF_LEN > 0
     // ------- Init ringbuffer -------
     init_ringbuffer_metadata(send_buf, SEND_BUF_LEN, &send_buf_metadata);
