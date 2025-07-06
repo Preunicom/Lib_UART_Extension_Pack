@@ -60,7 +60,7 @@ volatile uint8_t ExtPack_LL_SREG_save;
 // ----------------------------------------- Init ------------------------------------------
 
 void _init_ExtPack_LL() {
-    CPUINT_LVL1VEC = USART0_DRE_vect_num; // Set UART data register empty interrupt to higher priority as receive interrupt
+    CPUINT_LVL1VEC = USART0_DRE_vect_num; // Set UART data register empty interrupt to higher priority as receive interrupt (Otherwise sending will be interrupted by receiving which leads to malformed command pairs)
 #if SEND_BUF_LEN > 0
     // ------- Init ringbuffer -------
     init_ringbuffer_metadata(send_buf, SEND_BUF_LEN, &send_buf_metadata);
