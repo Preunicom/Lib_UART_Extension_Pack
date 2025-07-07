@@ -1,5 +1,6 @@
 #include "ExtPack_U_SPI.h"
 #include "ExtPack_Internal.h"
+#include "Dynamic_Delay.h"
 
 ext_pack_error_t set_ExtPack_SPI_slave(unit_t unit, uint8_t slave_id) {
     unit_data[unit].output_values = slave_id;

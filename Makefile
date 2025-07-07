@@ -24,19 +24,16 @@ OBJDUMP = avr-objdump
 NM = avr-nm
 AVRDUDE = avrdude
 
-EXTPACK_HAL_DIR := lib/ExtPack/src/HAL
-EXTPACK_HAL_SRC := $(EXTPACK_HAL_DIR)/ExtPack_LL_$(MCU_AVRDUDE).c
 LIB_INCLUDES := $(addprefix -I,$(addsuffix /src,$(LIBS)))
 C_DEFINES = $(addprefix -D,$(DEFINES))
-CFLAGS = -Wall -Os -mmcu=$(MCU_AVR_GCC) -flto -fno-fat-lto-objects -DF_CPU=$(F_CPU) $(C_DEFINES) -std=c23 -I$(SRC_DIR) $(LIB_INCLUDES) -I$(EXTPACK_HAL_DIR)
+CFLAGS = -Wall -Os -mmcu=$(MCU_AVR_GCC) -flto -fno-fat-lto-objects -DF_CPU=$(F_CPU) $(C_DEFINES) -std=c23 -I$(SRC_DIR) $(LIB_INCLUDES)
 NMFLAGS = -S --size-sort -td
 ASFLAGS = -mmcu=$(MCU_AVR_GCC)
 LDFLAGS = -mmcu=$(MCU_AVR_GCC)
 
 SRC = $(shell find $(SRC_DIR) -name '*.c')
 ALL_LIB_SRCS := $(shell find $(addsuffix /src,$(LIBS)) -name '*.c')
-LIB_SRCS := $(filter-out $(EXTPACK_HAL_DIR)/%.c,$(ALL_LIB_SRCS))
-SRCS = $(SRC) $(LIB_SRCS) $(EXTPACK_HAL_SRC)
+SRCS = $(SRC) $(ALL_LIB_SRCS)
 
 OBJ = $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 

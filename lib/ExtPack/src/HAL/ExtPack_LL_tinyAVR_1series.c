@@ -1,7 +1,13 @@
-#include "ExtPack_LL_t416.h"
-#include "ExtPack_Internal.h"
+#if defined(__AVR_ATtiny212__) || defined(__AVR_ATtiny412__) || \
+    defined(__AVR_ATtiny214__) || defined(__AVR_ATtiny414__) || defined(__AVR_ATtiny814__) || defined(__AVR_ATtiny1614__) || \
+    defined(__AVR_ATtiny416__) || defined(__AVR_ATtiny816__) || defined(__AVR_ATtiny1616__) || defined(__AVR_ATtiny3216__) || \
+    defined(__AVR_ATtiny417__) || defined(__AVR_ATtiny817__) || defined(__AVR_ATtiny1617__) || defined(__AVR_ATtiny3217__)
+
+#include "../ExtPack_Internal.h"
+#include "avr/io.h"
+#include "avr/interrupt.h"
 #if SEND_BUF_LEN > 0
-#include "ExtPack_Ringbuffer_Internal.h"
+#include "../ExtPack_Ringbuffer_Internal.h"
 #endif
 
 /**
@@ -59,7 +65,7 @@ volatile uint8_t ExtPack_LL_SREG_save;
 
 // ----------------------------------------- Init ------------------------------------------
 
-void _init_ExtPack_LL() {
+void init_ExtPack_LL() {
     CPUINT_LVL1VEC = USART0_DRE_vect_num; // Set UART data register empty interrupt to higher priority as receive interrupt (Otherwise sending will be interrupted by receiving which leads to malformed command pairs)
 #if SEND_BUF_LEN > 0
     // ------- Init ringbuffer -------
@@ -75,7 +81,15 @@ void _init_ExtPack_LL() {
     // 8-bit data already default --> Nothing to do
     //Set RX and TX to enabled
     USART0.CTRLB |= USART_RXEN_bm | USART_TXEN_bm;
+#if defined(__AVR_ATtiny212__) || defined(__AVR_ATtiny412__) // Wrong pins named in the datasheet
+    PORTA_DIRSET = PIN6_bm; //Set TX to output
+    PORTA_DIRCLR = PIN7_bm; //Set RX to input
+#elif defined(__AVR_ATtiny416__) || defined(__AVR_ATtiny816__)
     PORTB_DIRSET = PIN2_bm; //Set TX to output
+    PORTB_DIRCLR = PIN3_bm; //Set RX to input
+#else
+    #error Implementation for TX and RX pin initialisation missing for this microcontroller. Add it above to fix.
+#endif
     //Enable interrupt RX Complete
     USART0.CTRLA |= USART_RXCIE_bm;
     /*
@@ -96,7 +110,7 @@ void _init_ExtPack_LL() {
 
 // ---------------------------------------- Sending ----------------------------------------
 
-ext_pack_error_t _send_UART_ExtPack_message(unit_t unit, uint8_t data) {
+ext_pack_error_t send_UART_ExtPack_command(unit_t unit, uint8_t data) {
 #if SEND_BUF_LEN > 0
     cli();
     uint8_t is_first_command = is_buf_empty(&send_buf_metadata);
@@ -218,3 +232,16 @@ ISR(TCA0_OVF_vect) {
     // Disables timer interrupts
     TCA0.SINGLE.INTCTRL &= ~TCA_SINGLE_OVF_bm;
 }
+
+// ---------------------------------------- Utility ----------------------------------------
+
+void enter_critical_zone() {
+    ExtPack_LL_SREG_save = CPU_SREG;
+    cli();
+}
+
+void exit_critical_zone() {
+    CPU_SREG = ExtPack_LL_SREG_save;
+}
+
+#endif

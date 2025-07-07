@@ -23,20 +23,7 @@
 #define EXTPACK_H
 
 #include <stdint.h>
-#include "Dynamic_Delay.h"
 #include "ExtPack_Defs.h"  // Include the header file for constants definitions
-
-#if defined(__AVR_ATmega328P__)
-    #include "ExtPack_LL_m328p.h"
-#elif defined(__AVR_ATmega808__)
-    #include "ExtPack_LL_m808.h"
-#elif defined(__AVR_ATtiny212__)
-    #include "ExtPack_LL_t212.h"
-#elif defined(__AVR_ATtiny416__)
-    #include "ExtPack_LL_t416.h"
-#else
-    #error Unsupported microcontroller!
-#endif
 
 /**
  * Initializes communication with ExtPack over UART.
@@ -107,5 +94,20 @@ ext_pack_error_t send_String_to_ExtPack(unit_t unit, const uint8_t* data, uint8_
  * @return The duration in us.
  */
 uint8_t get_ExtPack_send_duration_us();
+
+/**
+ * This function saves the status register and deactivates interrupts.
+ * This is used to enter a critical zone.
+ */
+void enter_critical_zone();
+
+/**
+ * This function resets the status register to the saved value.
+ * The value was saved when calling enter_critical_zone().
+ * This is used to exit a critical zone.
+ *
+ * @warning Do not use before calling enter_critical_zone()!
+ */
+void exit_critical_zone();
 
 #endif //EXTPACK

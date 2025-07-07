@@ -1,7 +1,10 @@
-#include "ExtPack_LL_m328p.h"
-#include "ExtPack_Internal.h"
+#if defined(__AVR_ATmega328P__)
+
+#include "../ExtPack_Internal.h"
+#include "avr/io.h"
+#include "avr/interrupt.h"
 #if SEND_BUF_LEN > 0
-#include "ExtPack_Ringbuffer_Internal.h"
+#include "../ExtPack_Ringbuffer_Internal.h"
 #endif
 
 /**
@@ -59,7 +62,7 @@ volatile uint8_t ExtPack_LL_SREG_save;
 
 // ----------------------------------------- Init ------------------------------------------
 
-void _init_ExtPack_LL() {
+void init_ExtPack_LL() {
 #if SEND_BUF_LEN > 0
     // ------- Init ringbuffer -------
     init_ringbuffer_metadata(send_buf, SEND_BUF_LEN, &send_buf_metadata);
@@ -94,7 +97,7 @@ void _init_ExtPack_LL() {
 
 // ---------------------------------------- Sending ----------------------------------------
 
-ext_pack_error_t _send_UART_ExtPack_message(unit_t unit, uint8_t data) {
+ext_pack_error_t send_UART_ExtPack_command(unit_t unit, uint8_t data) {
 #if SEND_BUF_LEN > 0
     cli();
     uint8_t is_first_command = is_buf_empty(&send_buf_metadata);
@@ -218,3 +221,16 @@ ISR(TIMER0_OVF_vect) {
     // Disables timer interrupts
     TIMSK0 &= ~(1 << TOIE0);
 }
+
+// ---------------------------------------- Utility ----------------------------------------
+
+void enter_critical_zone() {
+    ExtPack_LL_SREG_save = SREG;
+    cli();
+}
+
+void exit_critical_zone() {
+    SREG = ExtPack_LL_SREG_save;
+}
+
+#endif

@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <util/delay.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
 #include "ExtPack_U_Reset.h"
 #include "ExtPack_U_Error.h"
@@ -10,6 +12,7 @@
 #include "ExtPack_U_UART.h"
 #include "ExtPack_U_Timer.h"
 #include "ExtPack.h"
+#include "Dynamic_Delay.h"
 
 #define unit_U00_RST unit_U00
 #define unit_U01_ERR unit_U01
@@ -106,13 +109,13 @@ void unit_U02_custom_ISR(unit_t unit, uint8_t data) {
 }
 
 void unit_U03_custom_ISR(unit_t unit, uint8_t data) {
-    enable_global_interrupts();
+    sei();
     // UART Unit data received
     send_ExtPack_UART_data(unit_U03_UART, data);
 }
 
 void unit_U04_custom_ISR(unit_t unit, uint8_t data) {
-    enable_global_interrupts();
+    sei();
     // GPIO interrupt received
     if(data == 1) {
         uint8_t string[14] = "Hello World!\n";
@@ -126,13 +129,13 @@ void unit_U04_custom_ISR(unit_t unit, uint8_t data) {
 }
 
 void unit_U05_custom_ISR(unit_t unit, uint8_t data) {
-    enable_global_interrupts();
+    sei();
     // Timer interrupt received
     set_ExtPack_gpio_out(unit_U04_GPIO, get_ExtPack_data_gpio_out(unit_U04_GPIO) ^ 0b10);
 }
 
 void unit_U06_custom_ISR(unit_t unit, uint8_t data) {
-    enable_global_interrupts();
+    sei();
     // SPI message received
     if (data != 0) {
         // Got content
@@ -141,7 +144,7 @@ void unit_U06_custom_ISR(unit_t unit, uint8_t data) {
 }
 
 void unit_U07_custom_ISR(unit_t unit, uint8_t data) {
-    enable_global_interrupts();
+    sei();
     // I2C message received
     ;
 }

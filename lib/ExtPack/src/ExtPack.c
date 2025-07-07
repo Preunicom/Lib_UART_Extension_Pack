@@ -3,14 +3,35 @@
 #include "Dynamic_Delay.h"
 #include "ExtPack_Events.h"
 
+/**
+ * @def NULL
+ *
+ * @brief Defines NULL as pointer to zero.
+ */
 #define NULL (void*)0
+
+// --------------- Forward declaration of Low level implementations ---------------
+/**
+ * Initializes the communication hardware.
+ */
+extern void init_ExtPack_LL();
+/**
+ * Sends the command to the ExtPack via UART.
+ * Does not check the command or unit.
+ *
+ * @param unit The first byte to be sent.
+ * @param data The second byte to be sent.
+ * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE if UART is not ready.
+ */
+extern ext_pack_error_t send_UART_ExtPack_command(unit_t unit, uint8_t data);
+// --------------------------------------------------------------------------------
 
 struct unit units[USED_UNITS] = {0};
 
 struct unit_data_storage unit_data[USED_UNITS] = {0};
 
 void init_ExtPack(void (*reset_ISR)(unit_t, uint8_t), void (*error_ISR)(unit_t, uint8_t), void (*ack_ISR)(unit_t, uint8_t)) {
-    _init_ExtPack_LL();
+    init_ExtPack_LL();
     init_ExtPack_Unit(unit_U00, EXTPACK_RESET_UNIT, reset_ISR);
     init_ExtPack_Unit(unit_U01, EXTPACK_ERROR_UNIT, error_ISR);
     init_ExtPack_Unit(unit_U02, EXTPACK_ACK_UNIT, ack_ISR);
@@ -53,7 +74,7 @@ void process_received_ExtPack_data(unit_t unit, uint8_t data) {
 ext_pack_error_t _send_to_ExtPack(unit_t unit, uint8_t data) {
     // check if unit number is in used units range
     if ((unit & 0b00111111) < USED_UNITS) {
-        return _send_UART_ExtPack_message(unit, data);
+        return send_UART_ExtPack_command(unit, data);
     }
     // Sending failed or unit not in range of used units
     return EXT_PACK_FAILURE;
@@ -80,5 +101,5 @@ uint8_t get_ExtPack_send_duration_us() {
      * duration(us) = (ISR_Overhead (cc) * 1,000,000(us/s)) / F_CPU (cc/s)
      */
     return ((EXT_PACK_UART_BITS_PER_COMMAND_PAIR*1000000) / (uint32_t)BAUD_RATE) +
-        ((EXT_PACK_SOFTWARE_OVERHEAD_UART_TRANSMISSION_CLOCK_CYCLES*1000000)/(uint32_t)F_CPU);
+        ((EXT_PACK_ESTIMATED_SOFTWARE_OVERHEAD_UART_COMMAND_TRANSMISSION_CLOCK_CYCLES*1000000)/(uint32_t)F_CPU);
 }
