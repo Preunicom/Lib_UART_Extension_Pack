@@ -1,4 +1,5 @@
 #include "ExtPack_U_Timer.h"
+#include "Dynamic_Delay.h"
 
 ext_pack_error_t configure_ExtPack_timer(unit_t unit, uint8_t prescaler_divisor, uint8_t start_value) {
     uint8_t send_delay_us = get_ExtPack_send_duration_us();

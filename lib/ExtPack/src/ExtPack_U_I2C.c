@@ -1,5 +1,6 @@
 #include "ExtPack_U_I2C.h"
 #include "ExtPack_Internal.h"
+#include "Dynamic_Delay.h"
 
 uint8_t get_ExtPack_data_I2C_current_partner_adr(unit_t unit) {
     return 0b01111111 & get_ExtPack_stored_unit_output_values(unit);

@@ -27,6 +27,28 @@
 #include "ExtPack.h"
 
 /**
+ * @def BAUD_RATE
+ *
+ * @brief The BAUD rate used to communicate with the ExtPack.
+ */
+#define BAUD_RATE 1000000
+
+/**
+ * @def EXT_PACK_SOFTWARE_OVERHEAD_UART_TRANSMISSION_CLOCK_CYCLES
+ *
+ * @brief Calculates the amount of clock cycles an ExtPack UART transmission needs on top of the UART transmission duration itself.
+ */
+#define EXT_PACK_ESTIMATED_SOFTWARE_OVERHEAD_UART_COMMAND_TRANSMISSION_CLOCK_CYCLES 25
+
+/**
+ * @def EXT_PACK_UART_BITS_PER_COMMAND_PAIR
+ *
+ * @brief The amount of bits sent via UART per ExtPack command pair.
+ * @note start bits + data bits + parity bits + stop bits
+ */
+#define EXT_PACK_UART_BITS_PER_COMMAND_PAIR 20
+
+/**
  * @def ACC_MODE0_BIT
  * @brief Defines bit 6 of the unit_number package to represent the lower access mode bit.
  */
