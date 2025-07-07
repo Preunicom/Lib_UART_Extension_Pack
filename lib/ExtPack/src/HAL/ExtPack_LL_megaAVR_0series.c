@@ -4,9 +4,6 @@
 #include "../ExtPack_Internal.h"
 #include "avr/io.h"
 #include "avr/interrupt.h"
-#if SEND_BUF_LEN > 0
-#include "../ExtPack_Ringbuffer_Internal.h"
-#endif
 
 /**
  * @def BAUD_CONST
@@ -50,6 +47,8 @@ volatile state_type recv_state = RECV_UNIT_NEXT_STATE;
 #endif
 
 #if SEND_BUF_LEN > 0
+#include "../ExtPack_Ringbuffer_Internal.h"
+
 volatile ringbuffer_elem_t send_buf[SEND_BUF_LEN];
 volatile ringbuffer_metadata_t send_buf_metadata;
 

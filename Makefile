@@ -11,6 +11,8 @@ PROGRAMMER_PORT_EXP = $(if $(PROGRAMMER_PORT),-P $(PROGRAMMER_PORT),)
 
 SRC_DIR = src
 LIBS := $(wildcard lib/*)
+EXTPACK_DIR := lib/ExtPack
+EXTPACK_LIB := $(EXTPACK_DIR)/build/libExtPack.a
 BUILD_DIR = build
 
 STATUS_TEXT_COLOR = \033[0;35m
@@ -26,14 +28,14 @@ AVRDUDE = avrdude
 
 LIB_INCLUDES := $(addprefix -I,$(addsuffix /src,$(LIBS)))
 C_DEFINES = $(addprefix -D,$(DEFINES))
-CFLAGS = -Wall -Os -mmcu=$(MCU_AVR_GCC) -flto -fno-fat-lto-objects -DF_CPU=$(F_CPU) $(C_DEFINES) -std=c23 -I$(SRC_DIR) $(LIB_INCLUDES)
+CFLAGS = -Wall -Os -mmcu=$(MCU_AVR_GCC) -flto -DF_CPU=$(F_CPU) $(C_DEFINES) -std=c23 -I$(SRC_DIR) $(LIB_INCLUDES)
 NMFLAGS = -S --size-sort -td
 ASFLAGS = -mmcu=$(MCU_AVR_GCC)
-LDFLAGS = -mmcu=$(MCU_AVR_GCC)
+LDFLAGS = -mmcu=$(MCU_AVR_GCC) -flto
 
 SRC = $(shell find $(SRC_DIR) -name '*.c')
 ALL_LIB_SRCS := $(shell find $(addsuffix /src,$(LIBS)) -name '*.c')
-SRCS = $(SRC) $(ALL_LIB_SRCS)
+SRCS = $(SRC) #$(ALL_LIB_SRCS)
 
 OBJ = $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 
@@ -45,7 +47,7 @@ flash: $(BUILD_DIR)/$(TARGET).hex
 	$(AVRDUDE) -p $(MCU_AVRDUDE) -c $(PROGRAMMER) $(PROGRAMMER_PORT_EXP) -U flash:w:$(BUILD_DIR)/$(TARGET).hex:i
 	@echo "$(SUCCESSFULL_TEXT_COLOR)✅ Flashvorgang abgeschlossen.$(GREY_TEXT_COLOR)"
 
-eeprom: $(BUILD_DIR)/$(TARGET).eep 
+eeprom: $(BUILD_DIR)/$(TARGET).eep
 	@echo "$(STATUS_TEXT_COLOR)💾 Schreibe EEPROM...$(GREY_TEXT_COLOR)"
 	$(AVRDUDE) -p $(MCU_AVRDUDE) -c $(PROGRAMMER) -P $(PROGRAMMER_PORT) -U eeprom:w:$(BUILD_DIR)/$(TARGET).eep:i
 	@echo "$(SUCCESSFULL_TEXT_COLOR)✅ EEPROM geschrieben.$(GREY_TEXT_COLOR)"
@@ -61,9 +63,14 @@ stats: $(BUILD_DIR)/$(TARGET).elf
 	@$(OBJDUMP) -Pmem-usage $(BUILD_DIR)/$(TARGET).elf
 
 # Create .elf file
-$(BUILD_DIR)/$(TARGET).elf: $(OBJ)
+$(BUILD_DIR)/$(TARGET).elf: $(OBJ) $(EXTPACK_LIB)
 	@echo "$(STATUS_TEXT_COLOR)🔧 Erstelle ELF-Datei...$(GREY_TEXT_COLOR)"
 	$(CC) $(LDFLAGS) -o $@ $^
+
+# Build ExtPack library (delegated to its own Makefile)
+$(EXTPACK_LIB):
+	@echo "$(STATUS_TEXT_COLOR)🏗️ Erstelle ExtPack static library...$(GREY_TEXT_COLOR)"
+	$(MAKE) -C $(EXTPACK_DIR) MCU_AVR_GCC=$(MCU_AVR_GCC) F_CPU=$(F_CPU) DEFINES="$(DEFINES)"
 
 # Create .hex file (flashable)
 $(BUILD_DIR)/$(TARGET).hex: $(BUILD_DIR)/$(TARGET).elf
@@ -94,6 +101,7 @@ $(BUILD_DIR)/%.o: %.c
 
 clean:
 	@echo "$(STATUS_TEXT_COLOR)🧹 Entferne Build-Verzeichnis...$(GREY_TEXT_COLOR)"
+	$(MAKE) -C $(EXTPACK_DIR) clean
 	rm -rf $(BUILD_DIR)
 	@echo "$(SUCCESSFULL_TEXT_COLOR)✅ Clean abgeschlossen.$(GREY_TEXT_COLOR)"
 
