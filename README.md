@@ -1,6 +1,6 @@
 # Lib_UART_Extension_Pack_for_ATMega328P
 
-# Building
+## Building
 
 The Makefile is tested on macOS Sequoia (15.5).  
 It builds the static library `libExtPack.a` in the `build/` folder.  
@@ -13,6 +13,13 @@ The Makefile uses `lto` to build the library.
 It is therefore recommended to use the flag also to link the library.  
 **Note**: Make sure the library is built with the correct parameters named above matching your specific project.
 **Note**: If you are using a not unix based system you have to edit the `MKDIR_P ?=` and `RM_RF ?=`to something working on your system.
+
+## Build examples
+
+To build the examples you can use the `examples` target of the makefile:  
+`make examples MCU_AVR_GCC=atxxxxYYY F_CPU=YYYYYYYUL [DEFINES="[USED_UNITS=Y] [SEND_BUF_LEN=Y]"] [V=1]`  
+This creates a hex file for every example in the `build/examples` folder.
+This hex file can be flashed on the controller via for example avrdude.
 
 ## Communication
 

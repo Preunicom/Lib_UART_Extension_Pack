@@ -2,7 +2,7 @@ TARGET = ExtPack
 MCU_AVR_GCC ?=
 F_CPU ?=
 DEFINES ?=
-V ?= # Verbose (1 or 0)
+V ?= # Verbose
 
 # ------------------------------------------------------------
 # Quiet/verbose switch:
@@ -19,9 +19,21 @@ SRC_DIR = src
 HAL_DIR = $(SRC_DIR)/HAL
 BUILD_DIR = build
 
+# ------------------------------------------------------------
+# Example build configuration
+# ------------------------------------------------------------
+EXAMPLES_DIR := examples
+EXAMPLE_SRCS := $(wildcard $(EXAMPLES_DIR)/*.c)
+EXAMPLE_OBJS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(EXAMPLE_SRCS))
+EXAMPLE_ELFS := $(patsubst %.o,%.elf,$(EXAMPLE_OBJS))
+EXAMPLE_HEXS := $(patsubst %.elf,%.hex,$(EXAMPLE_ELFS))
+
+EXT_PACK_LIB := build/lib$(TARGET).a
+
 CC      = avr-gcc
 AR      = avr-gcc-ar
 RANLIB  = avr-gcc-ranlib
+OBJCOPY = avr-objcopy
 
 MKDIR_P ?= mkdir -p		# CHANGE if no unix user to something working on your system
 RM_RF   ?= rm -rf		# CHANGE if no unix user to something working on your system
@@ -35,12 +47,12 @@ SRCS = $(SRC) $(HAL)
 
 OBJ = $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 
-all: $(BUILD_DIR)/lib$(TARGET).a
-	$(info ✅ Build abgeschlossen!)
+all: $(EXT_PACK_LIB)
+	$(info ✅ Build finished!)
 
 # Create .a file (static library)
-$(BUILD_DIR)/lib$(TARGET).a: $(OBJ)
-	$(info 📦 Erzeuge static library...)
+$(EXT_PACK_LIB): $(OBJ)
+	$(info 📦 Creating static library...)
 	$(Q)$(AR) rcs $@ $^
 	$(Q)$(RANLIB) $@
 
@@ -49,12 +61,25 @@ $(BUILD_DIR)/%.o: %.c
 	$(if $(strip $(MCU_AVR_GCC)),,$(error MCU_AVR_GCC not set! Please use "make MCU_AVR_GCC=atxxxx000 <other params> <target>" and replace atxxxx000 with your controller))
 	$(if $(strip $(F_CPU)),,$(error F_CPU not set! Please use "make F_CPU=xxxxxxxUL <other params> <target>" and replace xxxxxxx with the frequency of your controller in Hz))
 	$(Q)$(MKDIR_P) $(dir $@)
-	$(info 🧱 Kompiliere $<...)
+	$(info 🧱 Compiling $<...)
 	$(Q)$(CC) $(CFLAGS) -c $< -o $@
 
-clean:
-	$(info 🧹 Entferne Build-Verzeichnis...)
-	$(Q)$(RM_RF) $(BUILD_DIR)
-	$(info ✅ Clean abgeschlossen)
+examples: $(EXAMPLE_HEXS)
+	$(info ✅ All HEX-files of examples created!)
 
-.PHONY: all clean
+# Link example object files to ELF
+$(BUILD_DIR)/%.elf: $(BUILD_DIR)/%.o $(EXT_PACK_LIB)
+	$(info 🔧 Linking $@...)
+	$(Q)$(CC) -mmcu=$(MCU_AVR_GCC) -flto -o $@ $^
+
+# Generate HEX from ELF
+$(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf
+	$(info 🔧 Creating HEX-file $@...)
+	$(Q)$(OBJCOPY) -O ihex -R .eeprom $< $@
+
+clean:
+	$(info 🧹 Removing build-folder...)
+	$(Q)$(RM_RF) $(BUILD_DIR)
+	$(info ✅ Clean finished!)
+
+.PHONY: all examples clean
