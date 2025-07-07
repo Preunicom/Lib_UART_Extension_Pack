@@ -1,108 +1,60 @@
-TARGET = Lib_UART_Extension_Pack
-MCU_AVR_GCC ?= attiny212
-MCU_AVRDUDE ?= t212
-F_CPU ?= 20000000UL
-DEFINES ?= USED_UNITS=8 SEND_BUF_LEN=0
+TARGET = ExtPack
+MCU_AVR_GCC ?=
+F_CPU ?=
+DEFINES ?=
+V ?= # Verbose (1 or 0)
 
-PROGRAMMER ?= serialupdi
-PROGRAMMER_PORT ?= /dev/tty.usbserial-1120
-
-PROGRAMMER_PORT_EXP = $(if $(PROGRAMMER_PORT),-P $(PROGRAMMER_PORT),)
+# ------------------------------------------------------------
+# Quiet/verbose switch:
+#   Default: silent (only status messages are shown)
+#   Verbose: make V=1
+# ------------------------------------------------------------
+ifeq ($(V),1)
+  Q :=
+else
+  Q := @
+endif
 
 SRC_DIR = src
-LIBS := $(wildcard lib/*)
-EXTPACK_DIR := lib/ExtPack
-EXTPACK_LIB := $(EXTPACK_DIR)/build/libExtPack.a
+HAL_DIR = $(SRC_DIR)/HAL
 BUILD_DIR = build
 
-STATUS_TEXT_COLOR = \033[0;35m
-SUCCESSFULL_TEXT_COLOR = \033[0;32m
-GREY_TEXT_COLOR = \033[38;5;244m
-RESET_COLOR = \033[0m
+CC      = avr-gcc
+AR      = avr-gcc-ar
+RANLIB  = avr-gcc-ranlib
 
-CC = avr-gcc
-OBJCOPY = avr-objcopy
-OBJDUMP = avr-objdump
-NM = avr-nm
-AVRDUDE = avrdude
+MKDIR_P ?= mkdir -p		# CHANGE if no unix user to something working on your system
+RM_RF   ?= rm -rf		# CHANGE if no unix user to something working on your system
 
-LIB_INCLUDES := $(addprefix -I,$(addsuffix /src,$(LIBS)))
 C_DEFINES = $(addprefix -D,$(DEFINES))
-CFLAGS = -Wall -Os -mmcu=$(MCU_AVR_GCC) -flto -DF_CPU=$(F_CPU) $(C_DEFINES) -std=c23 -I$(SRC_DIR) $(LIB_INCLUDES)
-NMFLAGS = -S --size-sort -td
-ASFLAGS = -mmcu=$(MCU_AVR_GCC)
-LDFLAGS = -mmcu=$(MCU_AVR_GCC) -flto
+CFLAGS = -Wall -Os -mmcu=$(MCU_AVR_GCC) -flto -DF_CPU=$(F_CPU) $(C_DEFINES) -std=c23 -I$(SRC_DIR)
 
-SRC = $(shell find $(SRC_DIR) -name '*.c')
-ALL_LIB_SRCS := $(shell find $(addsuffix /src,$(LIBS)) -name '*.c')
-SRCS = $(SRC) #$(ALL_LIB_SRCS)
+SRC = $(wildcard $(SRC_DIR)/*.c)
+HAL = $(wildcard $(HAL_DIR)/*.c)
+SRCS = $(SRC) $(HAL)
 
 OBJ = $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 
-all: $(BUILD_DIR)/$(TARGET).hex  $(BUILD_DIR)/$(TARGET).eep $(BUILD_DIR)/$(TARGET).lst $(BUILD_DIR)/$(TARGET).asm
-	@echo "$(SUCCESSFULL_TEXT_COLOR)✅ Build abgeschlossen!$(GREY_TEXT_COLOR)"
+all: $(BUILD_DIR)/lib$(TARGET).a
+	$(info ✅ Build abgeschlossen!)
 
-flash: $(BUILD_DIR)/$(TARGET).hex
-	@echo "$(STATUS_TEXT_COLOR)🔌 Flashe Firmware auf Mikrocontroller...$(GREY_TEXT_COLOR)"
-	$(AVRDUDE) -p $(MCU_AVRDUDE) -c $(PROGRAMMER) $(PROGRAMMER_PORT_EXP) -U flash:w:$(BUILD_DIR)/$(TARGET).hex:i
-	@echo "$(SUCCESSFULL_TEXT_COLOR)✅ Flashvorgang abgeschlossen.$(GREY_TEXT_COLOR)"
-
-eeprom: $(BUILD_DIR)/$(TARGET).eep
-	@echo "$(STATUS_TEXT_COLOR)💾 Schreibe EEPROM...$(GREY_TEXT_COLOR)"
-	$(AVRDUDE) -p $(MCU_AVRDUDE) -c $(PROGRAMMER) -P $(PROGRAMMER_PORT) -U eeprom:w:$(BUILD_DIR)/$(TARGET).eep:i
-	@echo "$(SUCCESSFULL_TEXT_COLOR)✅ EEPROM geschrieben.$(GREY_TEXT_COLOR)"
-
-stats: $(BUILD_DIR)/$(TARGET).elf
-	@echo ""
-	@echo "$(STATUS_TEXT_COLOR)📦 Größte Symbole im ELF:$(GREY_TEXT_COLOR)"
-	@echo ""
-	@echo "  START    SIZE  TYPE NAME"
-	@$(NM) $(NMFLAGS) $(BUILD_DIR)/$(TARGET).elf
-	@echo ""
-	@echo "$(STATUS_TEXT_COLOR)📊 Speicherverbrauch:$(RESET_COLOR)"
-	@$(OBJDUMP) -Pmem-usage $(BUILD_DIR)/$(TARGET).elf
-
-# Create .elf file
-$(BUILD_DIR)/$(TARGET).elf: $(OBJ) $(EXTPACK_LIB)
-	@echo "$(STATUS_TEXT_COLOR)🔧 Erstelle ELF-Datei...$(GREY_TEXT_COLOR)"
-	$(CC) $(LDFLAGS) -o $@ $^
-
-# Build ExtPack library (delegated to its own Makefile)
-$(EXTPACK_LIB):
-	@echo "$(STATUS_TEXT_COLOR)🏗️ Erstelle ExtPack static library...$(GREY_TEXT_COLOR)"
-	$(MAKE) -C $(EXTPACK_DIR) MCU_AVR_GCC=$(MCU_AVR_GCC) F_CPU=$(F_CPU) DEFINES="$(DEFINES)"
-
-# Create .hex file (flashable)
-$(BUILD_DIR)/$(TARGET).hex: $(BUILD_DIR)/$(TARGET).elf
-	@echo "$(STATUS_TEXT_COLOR)🔧 Erstelle HEX-Datei...$(GREY_TEXT_COLOR)"
-	$(OBJCOPY) -O ihex -R .eeprom $< $@
-
-# Create .lst file (disassembled .elf file - all sections)
-$(BUILD_DIR)/$(TARGET).lst: $(BUILD_DIR)/$(TARGET).elf
-	@echo "$(STATUS_TEXT_COLOR)📄 Erzeuge LST-Datei (Disassembly)...$(GREY_TEXT_COLOR)"
-	$(OBJDUMP) -d $< > $@
-
-# Create .asm file (disassembled .elf file - .text section)
-$(BUILD_DIR)/$(TARGET).asm: $(BUILD_DIR)/$(TARGET).elf
-	@echo "$(STATUS_TEXT_COLOR)📄 Erzeuge ASM-Datei (Disassembly)...$(GREY_TEXT_COLOR)"
-	$(OBJDUMP) -S -C $< > $@
-
-# Create .eep file (eeprom writeable)
-$(BUILD_DIR)/$(TARGET).eep: $(BUILD_DIR)/$(TARGET).elf
-	@echo "$(STATUS_TEXT_COLOR)📦 Erzeuge EEPROM-Datei...$(GREY_TEXT_COLOR)"
-	$(OBJCOPY) -O ihex -j .eeprom $< $@
+# Create .a file (static library)
+$(BUILD_DIR)/lib$(TARGET).a: $(OBJ)
+	$(info 📦 Erzeuge static library...)
+	$(Q)$(AR) rcs $@ $^
+	$(Q)$(RANLIB) $@
 
 # Create .o files (compiled files)
 $(BUILD_DIR)/%.o: %.c
-	@echo "$(STATUS_TEXT_COLOR)📁 Erstelle Ordnerstruktur für $@... $(GREY_TEXT_COLOR)"
-	mkdir -p $(dir $@)
-	@echo "$(STATUS_TEXT_COLOR)🧱 Kompiliere $<...$(GREY_TEXT_COLOR)"
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(if $(strip $(MCU_AVR_GCC)),,$(error MCU_AVR_GCC not set! Please use "make MCU_AVR_GCC=atxxxx000 <other params> <target>" and replace atxxxx000 with your controller))
+	$(if $(strip $(F_CPU)),,$(error F_CPU not set! Please use "make F_CPU=xxxxxxxUL <other params> <target>" and replace xxxxxxx with the frequency of your controller in Hz))
+	$(Q)$(MKDIR_P) $(dir $@)
+	$(info 🧱 Kompiliere $<...)
+	$(Q)$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	@echo "$(STATUS_TEXT_COLOR)🧹 Entferne Build-Verzeichnis...$(GREY_TEXT_COLOR)"
-	$(MAKE) -C $(EXTPACK_DIR) clean
-	rm -rf $(BUILD_DIR)
-	@echo "$(SUCCESSFULL_TEXT_COLOR)✅ Clean abgeschlossen.$(GREY_TEXT_COLOR)"
+	$(info 🧹 Entferne Build-Verzeichnis...)
+	$(Q)$(RM_RF) $(BUILD_DIR)
+	$(info ✅ Clean abgeschlossen)
 
-.PHONY: all flash eeprom stats clean
+.PHONY: all clean
