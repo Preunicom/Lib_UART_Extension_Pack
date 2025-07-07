@@ -1,12 +1,11 @@
-#if defined(__AVR_ATmega808__) || defined(__AVR_ATmega1608__) || defined(__AVR_ATmega3208__) || defined(__AVR_ATmega4808__) || \
-    defined(__AVR_ATmega809__) || defined(__AVR_ATmega1609__) || defined(__AVR_ATmega3209__) || defined(__AVR_ATmega4809__)
+#if defined(__AVR_ATtiny212__) || defined(__AVR_ATtiny412__) || \
+    defined(__AVR_ATtiny214__) || defined(__AVR_ATtiny414__) || defined(__AVR_ATtiny814__) || defined(__AVR_ATtiny1614__) || \
+    defined(__AVR_ATtiny416__) || defined(__AVR_ATtiny816__) || defined(__AVR_ATtiny1616__) || defined(__AVR_ATtiny3216__) || \
+    defined(__AVR_ATtiny417__) || defined(__AVR_ATtiny817__) || defined(__AVR_ATtiny1617__) || defined(__AVR_ATtiny3217__)
 
 #include "../ExtPack_Internal.h"
 #include "avr/io.h"
 #include "avr/interrupt.h"
-#if SEND_BUF_LEN > 0
-#include "../ExtPack_Ringbuffer_Internal.h"
-#endif
 
 /**
  * @def BAUD_CONST
@@ -50,6 +49,8 @@ volatile state_type recv_state = RECV_UNIT_NEXT_STATE;
 #endif
 
 #if SEND_BUF_LEN > 0
+#include "../ExtPack_Ringbuffer_Internal.h"
+
 volatile ringbuffer_elem_t send_buf[SEND_BUF_LEN];
 volatile ringbuffer_metadata_t send_buf_metadata;
 
@@ -75,14 +76,16 @@ void init_ExtPack_LL() {
      */
     cli();
     //Set BAUD rate
-    USART0.BAUD = BAUD_CONST;
-    //Set 8-bit data
-    USART0.CTRLC |= USART_CHSIZE_8BIT_gc;
+    USART0.BAUD = (uint16_t)BAUD_CONST;
+    // 8-bit data already default --> Nothing to do
     //Set RX and TX to enabled
     USART0.CTRLB |= USART_RXEN_bm | USART_TXEN_bm;
-#if defined(__AVR_ATmega808__) || defined(__AVR_ATmega1608__)
-    PORTA_DIRSET = PIN0_bm; //Set TX to output
-    PORTA_DIRCLR = PIN1_bm; //Set RX to input
+#if defined(__AVR_ATtiny212__) || defined(__AVR_ATtiny412__) // Wrong pins named in the datasheet
+    PORTA_DIRSET = PIN6_bm; //Set TX to output
+    PORTA_DIRCLR = PIN7_bm; //Set RX to input
+#elif defined(__AVR_ATtiny416__) || defined(__AVR_ATtiny816__)
+    PORTB_DIRSET = PIN2_bm; //Set TX to output
+    PORTB_DIRCLR = PIN3_bm; //Set RX to input
 #else
     #error Implementation for TX and RX pin initialisation missing for this microcontroller. Add it above to fix.
 #endif

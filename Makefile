@@ -1,100 +1,85 @@
-TARGET = Lib_UART_Extension_Pack
-MCU_AVR_GCC ?= attiny212
-MCU_AVRDUDE ?= t212
-F_CPU ?= 20000000UL
-DEFINES ?= USED_UNITS=8 SEND_BUF_LEN=0
+TARGET = ExtPack
+MCU_AVR_GCC ?=
+F_CPU ?=
+DEFINES ?=
+V ?= # Verbose
 
-PROGRAMMER ?= serialupdi
-PROGRAMMER_PORT ?= /dev/tty.usbserial-1120
-
-PROGRAMMER_PORT_EXP = $(if $(PROGRAMMER_PORT),-P $(PROGRAMMER_PORT),)
+# ------------------------------------------------------------
+# Quiet/verbose switch:
+#   Default: silent (only status messages are shown)
+#   Verbose: make V=1
+# ------------------------------------------------------------
+ifeq ($(V),1)
+  Q :=
+else
+  Q := @
+endif
 
 SRC_DIR = src
-LIBS := $(wildcard lib/*)
+HAL_DIR = $(SRC_DIR)/HAL
 BUILD_DIR = build
 
-STATUS_TEXT_COLOR = \033[0;35m
-SUCCESSFULL_TEXT_COLOR = \033[0;32m
-GREY_TEXT_COLOR = \033[38;5;244m
-RESET_COLOR = \033[0m
+# ------------------------------------------------------------
+# Example build configuration
+# ------------------------------------------------------------
+EXAMPLES_DIR := examples
+EXAMPLE_SRCS := $(wildcard $(EXAMPLES_DIR)/*.c)
+EXAMPLE_OBJS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(EXAMPLE_SRCS))
+EXAMPLE_ELFS := $(patsubst %.o,%.elf,$(EXAMPLE_OBJS))
+EXAMPLE_HEXS := $(patsubst %.elf,%.hex,$(EXAMPLE_ELFS))
 
-CC = avr-gcc
+EXT_PACK_LIB := build/lib$(TARGET).a
+
+CC      = avr-gcc
+AR      = avr-gcc-ar
+RANLIB  = avr-gcc-ranlib
 OBJCOPY = avr-objcopy
-OBJDUMP = avr-objdump
-NM = avr-nm
-AVRDUDE = avrdude
 
-LIB_INCLUDES := $(addprefix -I,$(addsuffix /src,$(LIBS)))
+MKDIR_P ?= mkdir -p		# CHANGE if no unix user to something working on your system
+RM_RF   ?= rm -rf		# CHANGE if no unix user to something working on your system
+
 C_DEFINES = $(addprefix -D,$(DEFINES))
-CFLAGS = -Wall -Os -mmcu=$(MCU_AVR_GCC) -flto -fno-fat-lto-objects -DF_CPU=$(F_CPU) $(C_DEFINES) -std=c23 -I$(SRC_DIR) $(LIB_INCLUDES)
-NMFLAGS = -S --size-sort -td
-ASFLAGS = -mmcu=$(MCU_AVR_GCC)
-LDFLAGS = -mmcu=$(MCU_AVR_GCC)
+CFLAGS = -Wall -Os -mmcu=$(MCU_AVR_GCC) -flto -DF_CPU=$(F_CPU) $(C_DEFINES) -std=c23 -I$(SRC_DIR)
 
-SRC = $(shell find $(SRC_DIR) -name '*.c')
-ALL_LIB_SRCS := $(shell find $(addsuffix /src,$(LIBS)) -name '*.c')
-SRCS = $(SRC) $(ALL_LIB_SRCS)
+SRC = $(wildcard $(SRC_DIR)/*.c)
+HAL = $(wildcard $(HAL_DIR)/*.c)
+SRCS = $(SRC) $(HAL)
 
 OBJ = $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 
-all: $(BUILD_DIR)/$(TARGET).hex  $(BUILD_DIR)/$(TARGET).eep $(BUILD_DIR)/$(TARGET).lst $(BUILD_DIR)/$(TARGET).asm
-	@echo "$(SUCCESSFULL_TEXT_COLOR)✅ Build abgeschlossen!$(GREY_TEXT_COLOR)"
+all: $(EXT_PACK_LIB)
+	$(info ✅ Build finished!)
 
-flash: $(BUILD_DIR)/$(TARGET).hex
-	@echo "$(STATUS_TEXT_COLOR)🔌 Flashe Firmware auf Mikrocontroller...$(GREY_TEXT_COLOR)"
-	$(AVRDUDE) -p $(MCU_AVRDUDE) -c $(PROGRAMMER) $(PROGRAMMER_PORT_EXP) -U flash:w:$(BUILD_DIR)/$(TARGET).hex:i
-	@echo "$(SUCCESSFULL_TEXT_COLOR)✅ Flashvorgang abgeschlossen.$(GREY_TEXT_COLOR)"
-
-eeprom: $(BUILD_DIR)/$(TARGET).eep 
-	@echo "$(STATUS_TEXT_COLOR)💾 Schreibe EEPROM...$(GREY_TEXT_COLOR)"
-	$(AVRDUDE) -p $(MCU_AVRDUDE) -c $(PROGRAMMER) -P $(PROGRAMMER_PORT) -U eeprom:w:$(BUILD_DIR)/$(TARGET).eep:i
-	@echo "$(SUCCESSFULL_TEXT_COLOR)✅ EEPROM geschrieben.$(GREY_TEXT_COLOR)"
-
-stats: $(BUILD_DIR)/$(TARGET).elf
-	@echo ""
-	@echo "$(STATUS_TEXT_COLOR)📦 Größte Symbole im ELF:$(GREY_TEXT_COLOR)"
-	@echo ""
-	@echo "  START    SIZE  TYPE NAME"
-	@$(NM) $(NMFLAGS) $(BUILD_DIR)/$(TARGET).elf
-	@echo ""
-	@echo "$(STATUS_TEXT_COLOR)📊 Speicherverbrauch:$(RESET_COLOR)"
-	@$(OBJDUMP) -Pmem-usage $(BUILD_DIR)/$(TARGET).elf
-
-# Create .elf file
-$(BUILD_DIR)/$(TARGET).elf: $(OBJ)
-	@echo "$(STATUS_TEXT_COLOR)🔧 Erstelle ELF-Datei...$(GREY_TEXT_COLOR)"
-	$(CC) $(LDFLAGS) -o $@ $^
-
-# Create .hex file (flashable)
-$(BUILD_DIR)/$(TARGET).hex: $(BUILD_DIR)/$(TARGET).elf
-	@echo "$(STATUS_TEXT_COLOR)🔧 Erstelle HEX-Datei...$(GREY_TEXT_COLOR)"
-	$(OBJCOPY) -O ihex -R .eeprom $< $@
-
-# Create .lst file (disassembled .elf file - all sections)
-$(BUILD_DIR)/$(TARGET).lst: $(BUILD_DIR)/$(TARGET).elf
-	@echo "$(STATUS_TEXT_COLOR)📄 Erzeuge LST-Datei (Disassembly)...$(GREY_TEXT_COLOR)"
-	$(OBJDUMP) -d $< > $@
-
-# Create .asm file (disassembled .elf file - .text section)
-$(BUILD_DIR)/$(TARGET).asm: $(BUILD_DIR)/$(TARGET).elf
-	@echo "$(STATUS_TEXT_COLOR)📄 Erzeuge ASM-Datei (Disassembly)...$(GREY_TEXT_COLOR)"
-	$(OBJDUMP) -S -C $< > $@
-
-# Create .eep file (eeprom writeable)
-$(BUILD_DIR)/$(TARGET).eep: $(BUILD_DIR)/$(TARGET).elf
-	@echo "$(STATUS_TEXT_COLOR)📦 Erzeuge EEPROM-Datei...$(GREY_TEXT_COLOR)"
-	$(OBJCOPY) -O ihex -j .eeprom $< $@
+# Create .a file (static library)
+$(EXT_PACK_LIB): $(OBJ)
+	$(info 📦 Creating static library...)
+	$(Q)$(AR) rcs $@ $^
+	$(Q)$(RANLIB) $@
 
 # Create .o files (compiled files)
 $(BUILD_DIR)/%.o: %.c
-	@echo "$(STATUS_TEXT_COLOR)📁 Erstelle Ordnerstruktur für $@... $(GREY_TEXT_COLOR)"
-	mkdir -p $(dir $@)
-	@echo "$(STATUS_TEXT_COLOR)🧱 Kompiliere $<...$(GREY_TEXT_COLOR)"
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(if $(strip $(MCU_AVR_GCC)),,$(error MCU_AVR_GCC not set! Please use "make MCU_AVR_GCC=atxxxx000 <other params> <target>" and replace atxxxx000 with your controller))
+	$(if $(strip $(F_CPU)),,$(error F_CPU not set! Please use "make F_CPU=xxxxxxxUL <other params> <target>" and replace xxxxxxx with the frequency of your controller in Hz))
+	$(Q)$(MKDIR_P) $(dir $@)
+	$(info 🧱 Compiling $<...)
+	$(Q)$(CC) $(CFLAGS) -c $< -o $@
+
+examples: $(EXAMPLE_HEXS)
+	$(info ✅ All HEX-files of examples created!)
+
+# Link example object files to ELF
+$(BUILD_DIR)/%.elf: $(BUILD_DIR)/%.o $(EXT_PACK_LIB)
+	$(info 🔧 Linking $@...)
+	$(Q)$(CC) -mmcu=$(MCU_AVR_GCC) -flto -o $@ $^
+
+# Generate HEX from ELF
+$(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf
+	$(info 🔧 Creating HEX-file $@...)
+	$(Q)$(OBJCOPY) -O ihex -R .eeprom $< $@
 
 clean:
-	@echo "$(STATUS_TEXT_COLOR)🧹 Entferne Build-Verzeichnis...$(GREY_TEXT_COLOR)"
-	rm -rf $(BUILD_DIR)
-	@echo "$(SUCCESSFULL_TEXT_COLOR)✅ Clean abgeschlossen.$(GREY_TEXT_COLOR)"
+	$(info 🧹 Removing build-folder...)
+	$(Q)$(RM_RF) $(BUILD_DIR)
+	$(info ✅ Clean finished!)
 
-.PHONY: all flash eeprom stats clean
+.PHONY: all examples clean
