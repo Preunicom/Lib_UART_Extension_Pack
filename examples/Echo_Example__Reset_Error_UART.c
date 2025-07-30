@@ -1,8 +1,9 @@
 /**
  * @file EchoUART.c
  *
- * This example shows the usage of the UART unit in combination with the Reset unit.
+ * This example shows the usage of the UART unit in combination with the Reset and Error unit.
  * The example sends all received data back to the UART sender.
+ * If there is an error in the communication "ERROR\n" is sent via UART.
  *
  * The Reset unit resets the microcontroller whenever the ExtPack is reset and the ExtPack when the microcontroller was reset.
  *
@@ -14,12 +15,15 @@
 
 #include "ExtPack.h"
 #include "ExtPack_U_Reset.h"
+#include "ExtPack_U_Error.h"
 #include "ExtPack_U_UART.h"
 
 #define RESET_UNIT unit_U00
+#define ERROR_UNIT unit_U01
 #define UART_Unit unit_U03
 
 void reset_unit_custom_ISR(unit_t unit, uint8_t data);
+void error_unit_custom_ISR(unit_t unit, uint8_t data);
 void UART_unit_custom_ISR(unit_t unit, uint8_t data);
 
 int main() {
@@ -28,7 +32,7 @@ int main() {
     CCP = 0xD8; // Disable change protection of Prescaler to write data
     CLKCTRL.MCLKCTRLB = temp;
 #endif
-    init_ExtPack(NULL, NULL, NULL);
+    init_ExtPack(NULL, error_unit_custom_ISR, NULL);
     init_ExtPack_Unit(UART_Unit, EXTPACK_UART_UNIT, UART_unit_custom_ISR);
     reset_ExtPack();
     _delay_us(100); // Wait for the ExtPack to send his reset request (which would reset this microcontroller)
@@ -47,6 +51,12 @@ void reset_unit_custom_ISR(unit_t unit, uint8_t data) {
         RSTCTRL.SWRR = RSTCTRL_SWRE_bm; // Reset
 #endif
     }
+}
+
+void error_unit_custom_ISR(unit_t unit, uint8_t data) {
+    // An error occurred
+    uint8_t error_string[7] = "ERROR\n";
+    send_ExtPack_UART_String(UART_Unit, error_string, 10000);
 }
 
 void UART_unit_custom_ISR(unit_t unit, uint8_t data) {
