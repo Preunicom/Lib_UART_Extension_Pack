@@ -31,7 +31,7 @@ ext_pack_error_t send_ExtPack_I2C_data_to_partner(unit_t unit, uint8_t partner_a
     return send_ExtPack_I2C_data(unit, data);
 }
 
-ext_pack_error_t send_ExtPack_I2C_String_to_partner(unit_t unit, uint8_t partner_adr, const uint8_t* data, uint8_t send_byte_delay_us) {
+ext_pack_error_t send_ExtPack_I2C_String_to_partner(unit_t unit, uint8_t partner_adr, const uint8_t* data, uint16_t send_byte_delay_us) {
     if(set_ExtPack_I2C_partner_adr(unit, partner_adr) == EXT_PACK_FAILURE) {
         return EXT_PACK_FAILURE;
     }

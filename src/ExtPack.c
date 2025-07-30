@@ -80,7 +80,7 @@ ext_pack_error_t _send_to_ExtPack(unit_t unit, uint8_t data) {
     return EXT_PACK_FAILURE;
 }
 
-ext_pack_error_t send_String_to_ExtPack(unit_t unit, const uint8_t* data, uint8_t send_byte_delay_us) {
+ext_pack_error_t send_String_to_ExtPack(unit_t unit, const uint8_t* data, uint16_t send_byte_delay_us) {
     int index = 0;
     while (data[index] != '\0') {
         if(_send_to_ExtPack(unit, data[index++]) == EXT_PACK_FAILURE) {

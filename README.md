@@ -1,4 +1,4 @@
-# Lib_UART_Extension_Pack_for_ATMega328P
+# Lib_UART_Extension_Pack
 
 ## Building
 
@@ -159,6 +159,7 @@ Sends a single byte of data to the specified communication unit (UART, SPI, or I
 
 Sends the String to a UART/SPI unit of ExtPack without the trailing '\0'.  
 Make sure the string ends with a '\0'!
+The delay between two chars is given in us and can not exceed 65535.
 
 #### set_ExtPack_SPI_slave() & set_ExtPack_I2C_partner_adr()
 
