@@ -90,6 +90,13 @@ typedef uint8_t unit_type_t;
 #define EXTPACK_I2C_UNIT 8
 
 /**
+ * @def EXTPACK_SRAM_UNIT
+ * @brief Constant value representing the SRAM (static random access memory) unit type.
+ * SRAM_Unit is short for ISSI_IS61WV5128BLL_SRAM_Unit
+ */
+#define EXTPACK_SRAM_UNIT 9
+
+/**
  * @typedef ext_pack_error_t
  * @brief Type alias for ExtPack function errors.
  *
