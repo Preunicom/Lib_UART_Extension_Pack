@@ -1,0 +1,15 @@
+#include "ExtPack_U_I2C.h"
+#include "../Core/ExtPack_Internal.h"
+
+uint8_t get_ExtPack_data_I2C_current_partner_adr(unit_t unit) {
+    return 0b01111111 & get_ExtPack_stored_unit_output_values(unit);
+}
+
+uint8_t get_ExtPack_data_I2C_last_received_data(unit_t unit) {
+    return get_ExtPack_stored_unit_input_values(unit);
+}
+
+ext_pack_error_t set_ExtPack_I2C_partner_adr(unit_t unit, uint8_t slave_id) {
+    unit_data[unit].output_values = slave_id; // Save slave_id locally
+    return _send_to_ExtPack(_set_ExtPack_access_mode(unit, 01), slave_id);
+}
