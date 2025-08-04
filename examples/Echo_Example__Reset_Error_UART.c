@@ -1,22 +1,20 @@
 /**
- * @file EchoUART.c
+ * @file Echo_Example__Reset_Error_UART.c
  *
  * This example shows the usage of the UART unit in combination with the Reset and Error unit.
  * The example sends all received data back to the UART sender.
  * If there is an error in the communication "ERROR\n" is sent via UART.
  *
  * The Reset unit resets the microcontroller whenever the ExtPack is reset and the ExtPack when the microcontroller was reset.
- *
  */
 
 #include <stddef.h>
 #include <avr/io.h>
 #include <util/delay.h>
 
-#include "ExtPack.h"
-#include "ExtPack_U_Reset.h"
-#include "ExtPack_U_Error.h"
-#include "ExtPack_U_UART.h"
+#include "ExtPack/Util/ExtPack_U_Reset.h"
+#include "ExtPack/Util/ExtPack_U_Error.h"
+#include "ExtPack/Service/ExtPack_U_UART_Advanced.h"
 
 #define RESET_UNIT unit_U00
 #define ERROR_UNIT unit_U01

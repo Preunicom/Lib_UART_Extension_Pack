@@ -1,21 +1,19 @@
 /**
- * @file BlinkTimerGPIO.c
+ * @file Blink_Example__Reset_Timer_GPIO.c
  *
  * This example shows the usage of the GPIO unit in combination with the Timer and Reset units.
  * The example creates a timer with interrupts every second which then toggles all LEDs of the GPIO unit.
  *
  * The Reset unit resets the microcontroller whenever the ExtPack is reset and the ExtPack when the microcontroller was reset.
- *
  */
 
 #include <stddef.h>
 #include <util/delay.h>
 #include <avr/io.h>
 
-#include "ExtPack_U_Reset.h"
-#include "ExtPack_U_GPIO.h"
-#include "ExtPack_U_Timer.h"
-#include "ExtPack.h"
+#include "ExtPack/Util/ExtPack_U_Reset.h"
+#include "ExtPack/Util/ExtPack_U_GPIO.h"
+#include "ExtPack/Service/ExtPack_U_Timer_Advanced.h"
 
 #define RESET_UNIT unit_U00
 #define GPIO_UNIT unit_U04

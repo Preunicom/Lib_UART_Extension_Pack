@@ -1,5 +1,5 @@
 /**
- * @file CommunicationI2C.c
+ * @file ReadRTC_Example__Reset_I2C_UART_ACK.c
  *
  * This example shows the usage of the I2C unit in combination with the UART, Reset and ACK units.
  * As communication partner an DS3231 real time clock is used.
@@ -7,18 +7,16 @@
  * Acknowledgements are used to ensure the ExtPack receives the commands.
  *
  * The Reset unit resets the microcontroller whenever the ExtPack is reset and the ExtPack when the microcontroller was reset.
- *
  */
 
 #include <stddef.h>
 #include <util/delay.h>
 #include <avr/io.h>
 
-#include "ExtPack.h"
-#include "ExtPack_U_Reset.h"
-#include "ExtPack_U_Acknowledge.h"
-#include "ExtPack_U_I2C.h"
-#include "ExtPack_U_UART.h"
+#include "ExtPack/Util/ExtPack_U_Reset.h"
+#include "ExtPack/Util/ExtPack_U_I2C.h"
+#include "ExtPack/Util/ExtPack_U_UART.h"
+#include "ExtPack/Service/ExtPack_U_Acknowledge_Advanced.h"
 
 #define RESET_UNIT unit_U00
 #define I2C_UNIT unit_U07

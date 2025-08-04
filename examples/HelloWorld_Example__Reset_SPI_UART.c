@@ -1,21 +1,19 @@
 /**
- * @file sendRecvSPI.c
+ * @file HelloWorld_Example__Reset_SPI_UART.c
  *
  * This example shows the usage of the SPI unit in combination with the Reset and UART unit.
  * The example sends "Hello World" via SPI and sends the received data from SPI via UART.
  *
  * The Reset unit resets the microcontroller whenever the ExtPack is reset and the ExtPack when the microcontroller was reset.
- *
  */
 
 #include <stddef.h>
 #include <avr/io.h>
 #include <util/delay.h>
 
-#include "ExtPack.h"
-#include "ExtPack_U_Reset.h"
-#include "ExtPack_U_UART.h"
-#include "ExtPack_U_SPI.h"
+#include "ExtPack/Util/ExtPack_U_Reset.h"
+#include "ExtPack/Service/ExtPack_U_UART_Advanced.h"
+#include "ExtPack/Service/ExtPack_U_SPI_Advanced.h"
 
 #define RESET_UNIT unit_U00
 #define UART_UNIT unit_U03
@@ -57,6 +55,6 @@ void reset_unit_custom_ISR(unit_t unit, uint8_t data) {
 }
 
 void SPI_unit_custom_ISR(unit_t unit, uint8_t data) {
-    // UART data received
+    // SPI data received
     send_ExtPack_UART_data(UART_UNIT, data);
 }
