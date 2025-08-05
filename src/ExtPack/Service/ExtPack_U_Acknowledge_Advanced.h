@@ -3,7 +3,9 @@
  *
  * @brief Advanced acknowledgment handling for the ACK unit in the ExtPack library.
  *
- * This header provides blocking functions to wait for acknowledgments from the ACK unit,
+ * @layer Service
+ *
+ * @details This header provides blocking functions to wait for acknowledgments from the ACK unit,
  * with optional data checking and timeout handling.
  *
  * ## Provided Functions:
@@ -30,6 +32,8 @@
  * Also checks ACK data.
  * Resets ACK event to not set.
  *
+ * @layer Service
+ *
  * @note The ACK_unit ISR is executed _before_ the wait_for_ExtPack_ACK() processes the acknowledgement.
  *
  * @param data The data the acknowledgement is expected to be.
@@ -43,6 +47,8 @@ ext_pack_error_t wait_for_ExtPack_ACK_data(uint8_t data, uint16_t timeout_us);
  * @brief Blocks until an acknowledgment of the ACK unit (unit_U02) of ExtPack gets received or the timeout is over
  * Resets ACK event to not set.
  * Does not compare ACK data.
+ *
+ * @layer Service
  *
  * @note The ACK_unit ISR is executed _before_ the wait_for_ExtPack_ACK() processes the acknowledgement.
  *

@@ -3,6 +3,8 @@
  *
  * @brief Header file for GPIO unit functions of the ExtPack library.
  *
+ * @layer Util
+ *
  * ## Features:
  * - Request input pin states using refresh_ExtPack_gpio_data.
  * - Retrieve last input values using get_ExtPack_data_gpio_in.
@@ -27,6 +29,8 @@
 /**
  * @brief Requests the current input pin states of a GPIO unit.
  *
+ * @layer Util
+ *
  * @param unit The target GPIO unit.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
@@ -36,6 +40,8 @@ static inline ext_pack_error_t refresh_ExtPack_gpio_data(unit_t unit) {
 
 /**
  * @brief Retrieves the last received values of the given ExtPack GPIO unit's input pins.
+ *
+ * @layer Util
  *
  * @details No communication with ExtPack is initiated as the values were saved at the last data change.
  *
@@ -47,6 +53,8 @@ uint8_t get_ExtPack_data_gpio_in(unit_t unit);
 /**
  * @brief Retrieves the last sent values of the given ExtPack GPIO unit's output pins.
  *
+ * @layer Util
+ *
  * @details No communication with ExtPack is initiated as the values were saved at the last data change.
  *
  * @param unit The GPIO unit of ExtPack from which the values are retrieved.
@@ -56,6 +64,8 @@ uint8_t get_ExtPack_data_gpio_out(unit_t unit);
 
 /**
  * @brief Sets the GPIO output pins of the ExtPack unit to the data value.
+ *
+ * @layer Util
  *
  * @param unit The unit to set the GPIO pins for.
  * @param data The GPIO pin register value to set.

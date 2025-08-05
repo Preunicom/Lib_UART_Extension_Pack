@@ -3,6 +3,7 @@
  *
  * @brief Header file for Timer unit functions of the ExtPack library.
  *
+ * @layer Util
  *
  * ## Features:
  * - Enable or disable a Timer unit using set_ExtPack_timer_enable.
@@ -29,6 +30,8 @@
 /**
  * @brief Sends a command to enable or disable the specified Timer unit of ExtPack.
  *
+ * @layer Util
+ *
  * @param unit The Timer unit of ExtPack whose enable state should be set.
  * @param enable Set to 0 to disable, any nonzero value to enable.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
@@ -40,6 +43,8 @@ static inline ext_pack_error_t set_ExtPack_timer_enable(unit_t unit, uint8_t ena
 /**
  * @brief Sends a command to restart the specified Timer unit of ExtPack.
  *
+ * @layer Util
+ *
  * @param unit The Timer unit of ExtPack to be restarted.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
@@ -49,6 +54,8 @@ static inline ext_pack_error_t restart_ExtPack_timer(unit_t unit) {
 
 /**
  * @brief Sends the timer prescaler divisor to ExtPack for the specified Timer unit.
+ *
+ * @layer Util
  *
  * @param unit The Timer unit of ExtPack for which the prescaler divisor is set.
  * @param prescaler_divisor The prescaler divisor value to be applied.
@@ -60,6 +67,8 @@ static inline ext_pack_error_t set_ExtPack_timer_prescaler(unit_t unit, uint8_t 
 
 /**
  * @brief Sends the new start value to ExtPack for the specified Timer unit.
+ *
+ * @layer Util
  *
  * @param unit The Timer unit of ExtPack for which the start value is set.
  * @param start_value The start value to be applied.

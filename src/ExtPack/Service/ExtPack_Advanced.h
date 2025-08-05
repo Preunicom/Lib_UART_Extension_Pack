@@ -3,7 +3,9 @@
  *
  * @brief Advanced extension functions for the ExtPack library.
  *
- * This header provides higher-level helper functions for ExtPack units,
+ * @layer Service
+ *
+ * @details This header provides higher-level helper functions for ExtPack units,
  * including utilities to send strings over ExtPack with defined byte delays.
  *
  * ## Provided Functions:
@@ -19,8 +21,10 @@
 #include "../Core/ExtPack.h" // Including the basic functionality
 
 /**
- * Sends the given String until '\0' to ExtPack.
+ * @brief Sends the given String until '\0' to ExtPack.
  * If a send char operation fails the function aborts and returns an error.
+ *
+ * @layer Service
  *
  * @param unit The ExtPack unit to which the data should be sent. Including the correct set access mode for sending.
  * @param data The data to be sent as String with terminating '\0'.

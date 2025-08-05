@@ -3,7 +3,9 @@
  *
  * @brief Advanced UART communication helper for the UART unit in the ExtPack library.
  *
- * This header provides a wrapper function for sending null-terminated strings over UART
+ * @layer Service
+ *
+ * @details This header provides a wrapper function for sending null-terminated strings over UART
  * with optional delay between bytes.
  *
  * ## Provided Functions:
@@ -30,6 +32,8 @@
  *
  * Sends the given String until '\0' to ExtPack with send chosen mode.
  * If a send char operation fails the function aborts and returns an error.
+ *
+ * @layer Service
  *
  * @param unit The ExtPack unit to which the data should be sent.
  * @param data The data to be sent as String with terminating '\0'.

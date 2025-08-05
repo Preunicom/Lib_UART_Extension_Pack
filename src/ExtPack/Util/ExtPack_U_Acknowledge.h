@@ -3,6 +3,8 @@
  *
  * @brief Header file for Acknowledge unit functions of the ExtPack library.
  *
+ * @layer Util
+ *
  * ## Features:
  * - Retrieve the ACK unit state with get_ExtPack_ack_state.
  * - Clear the ACK event with clear_ExtPack_ack_event.
@@ -30,18 +32,24 @@
 /**
  * @brief Retrieves the status of the ExtPack ACK unit (unit_U02).
  *
+ * @layer Util
+ *
  * @return active (1) or inactive (0)
  */
 uint8_t get_ExtPack_ack_state();
 
 /**
  * @brief Clears the acknowledgement received event of the ExtPack ACK unit (unit_U02).
+ *
+ * @layer Util
  */
 void clear_ExtPack_ack_event();
 
 /**
  * @brief Retrieves the acknowledge received event of the ExtPack ACK unit (unit_U02).
  * Additionally, it clears the event.
+ *
+ * @layer Util
  *
  * @return event set (1) or event not set (0)
  */
@@ -50,12 +58,16 @@ uint8_t get_ExtPack_ack_event();
 /**
  * @brief Alias to retrieve the acknowledgment received data of the ExtPack ACK unit.
  *
+ * @layer Util
+ *
  * @return The data the last received ack was for.
  */
 uint8_t get_ExtPack_ack_data();
 
 /**
  * @brief Alias to send enable or disable command to the ExtPack ACK unit.
+ *
+ * @layer Util
  *
  * @note This request message is acknowledged by the ExtPack.
  *

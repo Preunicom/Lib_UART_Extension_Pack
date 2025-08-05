@@ -3,7 +3,9 @@
  *
  * @brief Unit definitions for the UART Extension Pack.
  *
- * This file defines domain identifiers for the ExtPack system.
+ * @layer Core
+ *
+ * @details This file defines domain identifiers for the ExtPack system.
  * Including up to 64 distinct units to be addressed. Each unit is assigned a unique numerical value.
  *
  * ## Features:

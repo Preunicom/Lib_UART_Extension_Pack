@@ -3,6 +3,8 @@
  *
  * @brief Header file for I2C unit functions of the ExtPack library.
  *
+ * @layer Util
+ *
  * ## Features:
  * - Retrieve the current I2C partner address using get_ExtPack_data_I2C_current_partner_adr.
  * - Retrieve the last received I2C data byte using get_ExtPack_data_I2C_last_received_data.
@@ -29,6 +31,8 @@
 /**
  * @brief Retrieves the last set I2C partner address of the given ExtPack I2C unit.
  *
+ * @layer Util
+ *
  * @warning When the ExtPack did not get the sent partner address, this function will still return the sent one.
  *
  * @param unit The I2C unit of ExtPack to get the current set partner address from.
@@ -39,6 +43,8 @@ uint8_t get_ExtPack_data_I2C_current_partner_adr(unit_t unit);
 /**
  * @brief Alias to retrieve the last received I2C data byte of the given ExtPack I2C unit.
  *
+ * @layer Util
+ *
  * @param unit The I2C unit to get the data from.
  * @return The last received I2C data from this unit.
  */
@@ -46,6 +52,8 @@ uint8_t get_ExtPack_data_I2C_last_received_data(unit_t unit);
 
 /**
  * @brief Alias to set the partner address of the given I2C unit of ExtPack.
+ *
+ * @layer Util
  *
  * @param unit The unit to set the I2C partner address for.
  * @param slave_id The slave id to set.
@@ -55,6 +63,8 @@ ext_pack_error_t set_ExtPack_I2C_partner_adr(unit_t unit, uint8_t slave_id);
 
 /**
  * @brief Requests a byte from the currently set partner of the I2C unit of ExtPack.
+ *
+ * @layer Util
  *
  * @note The received data will not be returned. Use the custom ISR to work with the received data.
  *
@@ -67,6 +77,8 @@ static inline ext_pack_error_t receive_ExtPack_I2C_data(unit_t unit) {
 
 /**
  * @brief Send a byte via a I2C Unit of ExtPack.
+ *
+ * @layer Util
  *
  * @note To archive multiple bytes in one transaction without repeated start the bytes have to be sent with the same access mode (send/receive)
  * to the same partner address. Additionally, the following byte has to be sent while the one before is being transmitted by the ExtPack.

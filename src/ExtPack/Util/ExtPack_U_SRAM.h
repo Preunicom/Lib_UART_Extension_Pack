@@ -3,6 +3,8 @@
  *
  * @brief Header file for SRAM access operations of the ExtPack library.
  *
+ * @layer Util
+ *
  * ## Features:
  * - Resets the SRAM unit's addressing logic using reset_ExtPack_SRAM_address.
  * - Sets successive address bytes using set_ExtPack_SRAM_next_address_byte.
@@ -30,7 +32,9 @@
  */
 
 /**
- * @brief Resets the address of the SRAM unit to zero and set the next address block to write to to zero.
+ * @brief Resets the address of the SRAM unit to zero and set the next address block to write to zero.
+ *
+ * @layer Util
  *
  * @param unit The SRAM unit of ExtPack to reset the address from.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
@@ -43,6 +47,8 @@ static inline ext_pack_error_t reset_ExtPack_SRAM_address(unit_t unit) {
  * @brief Sets the next byte of the SRAM access address.
  * The first call sets the LSB. The second one the second byte, etc.
  *
+ * @layer Util
+ *
  * @param unit The SRAM unit of ExtPack to set the address for.
  * @param address_byte The next byte of the SRAM address to read/write from/to.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
@@ -53,6 +59,8 @@ static inline ext_pack_error_t set_ExtPack_SRAM_next_address_byte(unit_t unit, u
 
 /**
  * @brief Writes the data to the previously set address in the SRAM.
+ *
+ * @layer Util
  *
  * @param unit  The SRAM unit of ExtPack to write the data to.
  * @param data The data to write.
@@ -66,6 +74,8 @@ static inline ext_pack_error_t write_ExtPack_SRAM_data(unit_t unit, uint8_t data
  * @brief Request the data from the SRAM at the previously set address.
  * The data will be received async via interrupt.
  *
+ * @layer Util
+ *
  * @param unit The SRAM unit of ExtPack to request the data from.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
  */
@@ -75,6 +85,8 @@ static inline ext_pack_error_t request_ExtPack_SRAM_data(unit_t unit) {
 
 /**
  * @brief Function to retrieve the last received SRAM data byte of the given ExtPack SRAM unit.
+ *
+ * @layer Util
  *
  * @param unit The unit to get the data from
  * @return The last received SRAM data from this unit.

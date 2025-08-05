@@ -3,6 +3,8 @@
  *
  * @brief Header file for the Error unit functions of the ExtPack library.
  *
+ * @layer Util
+ *
  * ## Features:
  * - Defines error type constants for various ExtPack communication and processing errors.
  * - Provides function for retrieving the last error encountered by the ExtPack.
@@ -25,6 +27,8 @@
 /**
  * @brief Type alias for ExtPack errors of the ExtPack itself.
  *
+ * @layer Util
+ *
  * @details 'error_unit_error_type_t' is defined as uint8_t and is used to represent errors sent by the ExtPack itself.
  */
 typedef uint8_t error_unit_error_type_t;
@@ -32,23 +36,28 @@ typedef uint8_t error_unit_error_type_t;
 /**
  * @def ERROR_UNIT_ERROR_RECEIVING_FROM_HOST
  * @brief Constant value representing an error sent by the ExtPack because of an error while receiving UART data from host.
+ * @layer Util
  */
 #define ERROR_UNIT_ERROR_RECEIVING_FROM_HOST 1
 
 /**
  * @def ERROR_UNIT_ERROR_SENDING_TO_HOST
  * @brief Constant value representing an error sent by the ExtPack because of an error while sending UART data to host.
+ * @layer Util
  */
 #define ERROR_UNIT_ERROR_SENDING_TO_HOST 2
 
 /**
  * @def ERROR_UNIT_ERROR_PROCESSING
  * @brief Constant value representing an error sent by the ExtPack because of an error while processing a command/data.
+ * @layer Util
  */
 #define ERROR_UNIT_ERROR_PROCESSING 4
 
 /**
  * @brief Returns the last error received from ExtPack.
+ *
+ * @layer Util
  *
  * @details The returned error can be compared with the ERROR_UNIT_ERROR_<TYPE> macro to determine the type of the error.
  *
