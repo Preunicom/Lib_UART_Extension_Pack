@@ -94,4 +94,4 @@ This will reduce the used memory for the library.
 
 See the Doxygen documentation.  
 Use `make docs` to create it.  
-Then open `docs/html/index.html` in a browser.
+Then open `docs/index.html` in a browser.
