@@ -3,6 +3,8 @@
  *
  * @brief Header file for UART unit functions of the ExtPack library.
  *
+ * @layer Util
+ *
  * @author Markus Remy
  * @date 17.06.2025
  */
@@ -21,6 +23,8 @@
 /**
  * @brief Sends a byte via the UART unit of ExtPack.
  *
+ * @layer Util
+ *
  * @param unit The UART unit to send with.
  * @param data The data to send.
  * @return EXT_PACK_SUCCESS on success, EXT_PACK_FAILURE on failure.
@@ -31,6 +35,8 @@ static inline ext_pack_error_t send_ExtPack_UART_data(unit_t unit, uint8_t data)
 
 /**
  * @brief Function to retrieve the last received UART data byte of the given ExtPack UART unit.
+ *
+ * @layer Util
  *
  * @param unit The unit to get the data from
  * @return The last received UART data from this unit.

@@ -45,18 +45,21 @@ The Util layer adds the basic operations of the units.
 The Service layer adds more complex operations of the units based on combining basic operations.
 Therefore, the service layer can be cut off to be able to run the framework on smaller microcontrollers with less flash.
 
-|  Unit   | Util layer |  Service layer   |
-|:-------:|:----------:|:----------------:|
-| ExtPack |     ✅     |        ✅        |
-|  Reset  |     ✅     |        ❌        |
-|  Error  |     ✅     |        ❌        |
-|   ACK   |     ✅     |        ✅        |
-|  GPIO   |     ✅     |        ❌        |
-|  UART   |     ✅     |        ✅        |
-|  Timer  |     ✅     |        ✅        |
-|   SPI   |     ✅     |        ✅        |
-|   I2C   |     ✅     |        ✅        |
-|  SRAM   |     ✅     |        ✅        |
+|       Component       |     HAL      |    Core layer    |    Util layer     |       Service layer        |  Unit type macro   |
+|:---------------------:|:------------:|:----------------:|:-----------------:|:--------------------------:|:------------------:|
+| ExtPack Communication | ExtPack_LL.h |    ExtPack.h     |         -         |     ExtPack_Advanced.h     |         -          |
+|  Domain definitions   |      -       |  ExtPack_Defs.h  |         -         |             -              |         -          |
+|        Events         |      -       | ExtPack_Events.h |         -         |             -              |         -          |
+|    Dynamic delays     |      -       |        -         |  Dynamic_Delay.h  |             -              |         -          |
+|      Reset Unit       |      -       |        -         | ExtPack_U_Reset.h |             -              | EXTPACK_RESET_UNIT |
+|      Error Unit       |      -       |        -         | ExtPack_U_Error.h |             -              | EXTPACK_ERROR_UNIT |
+|   Acknowledge Unit    |      -       |        -         |  ExtPack_U_ACK.h  |  ExtPack_U_ACK_Advanced.h  |  EXTPACK_ACK_UNIT  |
+|       GPIO Unit       |      -       |        -         | ExtPack_U_GPIO.h  |             -              | EXTPACK_GPIO_UNIT  |
+|       UART Unit       |      -       |        -         | ExtPack_U_UART.h  | ExtPack_U_UART_Advanced.h  | EXTPACK_UART_UNIT  |
+|      Timer Unit       |      -       |        -         | ExtPack_U_Timer.h | ExtPack_U_Timer_Advanced.h | EXTPACK_TIMER_UNIT |
+|       SPI Unit        |      -       |        -         |  ExtPack_U_SPI.h  |  ExtPack_U_SPI_Advanced.h  |  EXTPACK_SPI_UNIT  |
+|       I2C Unit        |      -       |        -         |  ExtPack_U_I2C.h  |  ExtPack_U_I2C_Advanced.h  |  EXTPACK_I2C_UNIT  |
+|       SRAM Unit       |      -       |        -         | ExtPack_U_SRAM.h  | ExtPack_U_SRAM_Advanced.h  | EXTPACK_SRAM_UNIT  |
 
 ## Functionality
 

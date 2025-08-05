@@ -3,7 +3,9 @@
  *
  * @brief Advanced SPI communication helpers for the SPI unit in the ExtPack library.
  *
- * This header provides functions for sending data and strings over SPI using the ExtPack framework.
+ * @layer Service
+ *
+ * @details This header provides functions for sending data and strings over SPI using the ExtPack framework.
  * It includes functionality for selecting the SPI slave and inserting delays between transmitted bytes.
  *
  * ## Provided Functions:
@@ -27,7 +29,9 @@
  */
 
 /**
- * Sends given data to slave of SPI_Unit of ExtPack by setting the slave id of the unit followed by sending the data to set slave.
+ * @brief Sends given data to slave of SPI_Unit of ExtPack by setting the slave id of the unit followed by sending the data to set slave.
+ *
+ * @layer Service
  *
  * @param unit The ExtPack unit to which the data should be sent.
  * @param slave_id The slave id to send the data to.
@@ -37,8 +41,10 @@
 ext_pack_error_t send_ExtPack_SPI_data_to_slave(unit_t unit, uint8_t slave_id, uint8_t data);
 
 /**
- * Sends a set_ExtPack_SPI_slave control message followed by the given String until '\0' to ExtPack with send chosen mode.
+ * @brief Sends a set_ExtPack_SPI_slave control message followed by the given String until '\0' to ExtPack with send chosen mode.
  * If a send char operation fails the function aborts and returns an error.
+ *
+ * @layer Service
  *
  * @param unit The ExtPack unit to which the data should be sent.
  * @param slave_id The slave id to send the data to.
@@ -51,6 +57,8 @@ ext_pack_error_t send_ExtPack_SPI_String_to_slave(unit_t unit, uint8_t slave_id,
 /**
  * @brief Sends the given String until '\0' to ExtPack which then sends it over SPI.
  * If a send char operation fails the function aborts and returns an error.
+ *
+ * @layer Service
  *
  * @param unit The ExtPack unit to which the data should be sent. Including the correct set access mode for sending.
  * @param data The data to be sent as String with terminating '\0'.

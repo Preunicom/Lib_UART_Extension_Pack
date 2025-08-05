@@ -3,6 +3,11 @@
  *
  * @brief Header file for the ringbuffer as interface between low level UART ExtPack communication and high level logic.
  *
+ * @layer Core
+ *
+ * @warning This file is only for access for ExtPack library functions. The user should not directly use this header file.
+ *
+ *
  * ## Features:
  * - Initialize ringbuffer
  * - Read ringbuffer
@@ -20,6 +25,8 @@
 /**
  * @brief Typedef for the ringbuffer memory pointer.
  *
+ * @layer Core
+ *
  * Represents a pointer to the memory area (buffer) used for storing ringbuffer elements.
  * This buffer is externally provided and managed by the ringbuffer metadata.
  */
@@ -28,6 +35,8 @@ typedef volatile uint16_t* ringbuffer_t;
 /**
  * @brief Type of individual elements stored in the ringbuffer.
  *
+ * @layer Core
+ *
  * Each slot in the ringbuffer holds a value of type `uint16_t`.
  */
 typedef uint16_t ringbuffer_elem_t;
@@ -35,12 +44,16 @@ typedef uint16_t ringbuffer_elem_t;
 /**
  * @brief Metadata structure for managing the ringbuffer state.
  *
- * Contains buffer length, available slot count, and indices for reading and writing.
+ * @layer Core
+ *
+ * @details Contains buffer length, available slot count, and indices for reading and writing.
  * Required to control the behavior of the ringbuffer.
  */
 typedef struct {
     /**
      * @brief Pointer to the ringbuffer memory array.
+     *
+     * @layer Core
      *
      * This points to the memory block that stores the actual ringbuffer data elements.
      */
@@ -48,27 +61,37 @@ typedef struct {
     /**
      * @brief Total number of slots in the ringbuffer.
      *
+     * @layer Core
+     *
      * This defines the maximum capacity of the ringbuffer.
      */
     uint8_t buf_len;
     /**
      * @brief Number of currently free slots in the buffer.
      *
-     * Decreases with every write and increases with every read operation.
+     * @layer Core
+     *
+     * @details Decreases with every write and increases with every read operation.
      */
     uint8_t free_slots;
     /**
      * @brief Index of the next slot to read from.
+     *
+     * @layer Core
      */
     uint8_t next_read_slot_index;
     /**
      * @brief Index of the next slot to write to.
+     *
+     * @layer Core
      */
     uint8_t next_write_slot_index;
 } ringbuffer_metadata_t;
 
 /**
- * Initializes the metadata of the ringbuffer given as pointer.
+ * @brief Initializes the metadata of the ringbuffer given as pointer.
+ *
+ * @layer Core
  *
  * @note Create a ringbuffer with wished length first (ringbuffer_elem_t buf[buf_len];)
  * as well as the metadata struct (ringbuffer_metadata_t xyz;) and pass both as well as the chosen buffer length here.
@@ -80,7 +103,9 @@ typedef struct {
 void init_ringbuffer_metadata(ringbuffer_t buf, uint8_t buf_len, volatile ringbuffer_metadata_t* metadata);
 
 /**
- * Writes an element in the buffer when enough slots are free.
+ * @brief Writes an element in the buffer when enough slots are free.
+ *
+ * @layer Core
  *
  * @param metadata The metadata of the ringbuffer to work with.
  * @param data The data to write.
@@ -89,7 +114,9 @@ void init_ringbuffer_metadata(ringbuffer_t buf, uint8_t buf_len, volatile ringbu
 ext_pack_error_t write_buf(volatile ringbuffer_metadata_t* metadata, ringbuffer_elem_t data);
 
 /**
- * Read a element of the buffer when something to read is available.
+ * @brief Read an element of the buffer when something to read is available.
+ *
+ * @layer Core
  *
  * @param metadata The metadata of the ringbuffer to read from.
  * @param data A pointer to the data slot to store the result if read is successful.
@@ -98,7 +125,9 @@ ext_pack_error_t write_buf(volatile ringbuffer_metadata_t* metadata, ringbuffer_
 ext_pack_error_t read_buf(volatile ringbuffer_metadata_t* metadata, ringbuffer_elem_t* data);
 
 /**
- * Checks if the given buffer is full.
+ * @brief Checks if the given buffer is full.
+ *
+ * @layer Core
  *
  * @param metadata The buffer metadata to check.
  * @return 1 if full, 0 otherwise.
@@ -108,7 +137,9 @@ static inline uint8_t is_buf_full(volatile ringbuffer_metadata_t* metadata) {
 }
 
 /**
- * Checks if the given buffer is empty.
+ * @brief Checks if the given buffer is empty.
+ *
+ * @layer Core
  *
  * @param metadata The buffer metadata to check.
  * @return 1 if empty, 0 otherwise.

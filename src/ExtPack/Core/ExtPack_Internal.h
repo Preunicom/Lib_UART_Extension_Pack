@@ -3,7 +3,9 @@
  *
  * @brief Header file for internal definitions of the ExtPack library.
  *
- * This file provides internal macros, data structures, and inline functions
+ * @layer Core
+ *
+ * @details This file provides internal macros, data structures, and inline functions
  * for managing units and their data storage within the ExtPack system.
  *
  * @warning This file is only for access for ExtPack library functions. The user should not directly use this header file.
@@ -27,18 +29,24 @@
 /**
  * @def ACC_MODE0_BIT
  * @brief Defines bit 6 of the unit_number package to represent the lower access mode bit.
+ *
+ * @layer Core
  */
 #define ACC_MODE0_BIT 6
 
 /**
  * @def ACC_MODE1_BIT
  * @brief Defines bit 7 of the unit_number package to represent the higher access mode bit.
+ *
+ * @layer Core
  */
 #define ACC_MODE1_BIT 7
 
 /**
  * @struct unit
- * Structure representing a unit in ExtPack.
+ * @brief Structure representing a unit in ExtPack.
+ *
+ * @layer Core
  *
  * @param unit_type The type of the unit (e.g., GPIO, UART, Timer).
  * @param custom_ISR The custom interrupt service routine (ISR) function
@@ -47,12 +55,16 @@
 struct unit {
     /**
      * @brief Type of the unit (e.g., GPIO, UART, Timer).
+     *
+     * @layer Core
      */
     unit_type_t unit_type;
     /**
      * @brief Pointer to a custom interrupt service routine (ISR).
      *
-     * This function is called by the system when the unit triggers an interrupt as callback function.
+     * @layer Core
+     *
+     * @details This function is called by the system when the unit triggers an interrupt as callback function.
      * The parameters are the unit identifier and the associated data byte.
      *
      * @warning Interrupts will not be enabled before calling the custom_ISR.
@@ -67,6 +79,8 @@ struct unit {
  * @brief This array holds the unit structures used in the system. The array is initialized
  *        with zero values and its size is determined by the macro 'USED_UNITS'.
  *
+ * @layer Core
+ *
  * @note Each element of the array represents a unit within the system. The number of units
  *       in use is defined by the 'USED_UNITS' macro, and the array is pre-initialized to ensure
  *       all unit fields are set to zero on startup.
@@ -79,6 +93,8 @@ extern struct unit units[USED_UNITS];
  *
  * @brief This structure holds the input and output values for a unit. It is used to
  *        store the current states of the unit.
+ *
+ * @layer Core
  *
  * @note The structure contains two fields:
  *       - `input_values`: Stores the incoming values of the unit.
@@ -102,14 +118,18 @@ struct unit_data_storage {
  *        corresponds to a specific unit and stores its incoming and outgoing states, provided that
  *        the unit uses the storage.
  *
+ * @layer Core
+ *
  * @note The array is initialized with zeros, and its size is determined by the `USED_UNITS` constant.
  *       It is used to manage and store the data for all active units which needs it within the system.
  */
 extern struct unit_data_storage unit_data[USED_UNITS];
 
 /**
- * Returns the stored output data of the given unit of ExtPack.
+ * @brief Returns the stored output data of the given unit of ExtPack.
  * The data has to be interpreted depending on the unit type.
+ *
+ * @layer Core
  *
  * @param unit The ExtPack unit.
  * @return The stored output data.
@@ -119,8 +139,10 @@ inline uint8_t get_ExtPack_stored_unit_output_values(unit_t unit) {
 }
 
 /**
- * Returns the stored input data of the given unit of ExtPack.
+ * @brief Returns the stored input data of the given unit of ExtPack.
  * The data has to be interpreted depending on the unit type.
+ *
+ * @layer Core
  *
  * @param unit The ExtPack unit.
  * @return The stored input data.
@@ -130,7 +152,9 @@ inline uint8_t get_ExtPack_stored_unit_input_values(unit_t unit) {
 }
 
 /**
- * Processes the data received from ExtPAck via UART.
+ * @brief Processes the data received from ExtPAck via UART.
+ *
+ * @layer Core
  *
  * @param unit The received unit byte.
  * @param data The received data byte

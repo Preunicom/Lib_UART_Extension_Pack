@@ -3,7 +3,9 @@
  *
  * @brief Advanced I2C communication helpers for the I2C unit in the ExtPack library.
  *
- * This header provides advanced functions to send and receive data via the I2C unit of ExtPack.
+ * @layer Service
+ *
+ * @details This header provides advanced functions to send and receive data via the I2C unit of ExtPack.
  * Includes functions for setting the I2C partner address and sending strings with delays.
  *
  * ## Provided Functions:
@@ -29,7 +31,9 @@
  */
 
 /**
- * Request a byte from given partner and set the partner in the I2C_Unit of ExtPack.
+ * @brief Request a byte from given partner and set the partner in the I2C_Unit of ExtPack.
+ *
+ * @layer Service
  *
  * @note The received data will not be returned. Use the custom ISR to work with the received data.
  *
@@ -43,6 +47,8 @@ ext_pack_error_t receive_ExtPack_I2C_data_from_partner(unit_t unit, uint8_t part
  * @brief Sends the given String until '\0' to ExtPack which then sends it over I2C.
  * If a send char operation fails the function aborts and returns an error.
  *
+ * @layer Service
+ *
  * @param unit The ExtPack unit to which the data should be sent. Including the correct set access mode for sending.
  * @param data The data to be sent as String with terminating '\0'.
  * @param send_byte_delay_us The delay between sending two bytes in us.
@@ -53,7 +59,9 @@ static inline ext_pack_error_t send_ExtPack_I2C_String(unit_t unit, const uint8_
 }
 
 /**
- * Sends given data to slave of I2C_Unit of ExtPack by setting the partner adr of the unit followed by sending the data to set slave.
+ * @brief Sends given data to slave of I2C_Unit of ExtPack by setting the partner adr of the unit followed by sending the data to set slave.
+ *
+ * @layer Service
  *
  * @param unit The ExtPack unit to which the data should be sent.
  * @param partner_adr The partner address to send the data to.
@@ -63,8 +71,10 @@ static inline ext_pack_error_t send_ExtPack_I2C_String(unit_t unit, const uint8_
 ext_pack_error_t send_ExtPack_I2C_data_to_partner(unit_t unit, uint8_t partner_adr, uint8_t data);
 
 /**
- * Sends a set_ExtPack_I2C_partner_adr control message followed by the given String until '\0' to ExtPack with send chosen mode.
+ * @brief Sends a set_ExtPack_I2C_partner_adr control message followed by the given String until '\0' to ExtPack with send chosen mode.
  * If a send char operation fails the function aborts and returns an error.
+ *
+ * @layer Service
  *
  * @param unit The ExtPack unit to which the data should be sent.
  * @param partner_adr The partner address to send the data to.

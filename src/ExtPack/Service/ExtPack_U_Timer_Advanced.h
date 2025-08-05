@@ -3,7 +3,9 @@
  *
  * @brief Advanced timer configuration helpers for the Timer unit in the ExtPack library.
  *
- * This header provides functions to configure timer units with specific prescaler and start values,
+ * @layer Service
+ *
+ * @details This header provides functions to configure timer units with specific prescaler and start values,
  * including restarting and enabling the timer in one call.
  *
  * ## Provided Functions:
@@ -25,8 +27,10 @@
  */
 
 /**
- * Configures the timer with prescaler divisor and start value.
+ * @brief Configures the timer with prescaler divisor and start value.
  * Additionally, the timer is restarted and enabled.
+ *
+ * @layer Service
  *
  * @param unit The Timer unit of ExtPack which to configure.
  * @param prescaler_divisor The prescaler divisor value to be applied.

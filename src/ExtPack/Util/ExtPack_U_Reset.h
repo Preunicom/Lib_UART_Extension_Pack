@@ -3,6 +3,8 @@
  *
  * @brief Header file for Reset unit functions of the ExtPack library.
  *
+ * @layer Util
+ *
  * ## Features:
  * - Send a reset command to reset unit using reset_ExtPack.
  *
@@ -23,6 +25,8 @@
 
 /**
  * @brief Send a reset command to unit zero of ExtPack via UART.
+ *
+ * @layer Util
  *
  * @warning Be cautious when resetting the microcontroller in the custom ISR of the reset unit combined with resetting the ExtPack when initializing the microcontroller.
  * This leads to an endless reset loop.
