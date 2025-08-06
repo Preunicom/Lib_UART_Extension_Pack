@@ -1,5 +1,5 @@
 # Bug Fix
-## Bug description
+## Description
 <!-- Describe the bug. How was it discovered? Link the issue. (if applicable) -->
 
 ## Solution
